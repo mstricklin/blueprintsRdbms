@@ -86,7 +86,7 @@ public class RdbmsTest extends GraphTest {
 
         Vertex v3 = graph_.getVertex(Long.valueOf(1));
         log.info("got vertex when looking for 1: {}", v3);
-        v3.setProperty("sam", "i am");
+        v3.setProperty("sam", "i am43");
         v3.setProperty("String", "string");
         v3.setProperty("Long", Long.valueOf(17));
         v3.setProperty("Integer", Integer.valueOf(18));

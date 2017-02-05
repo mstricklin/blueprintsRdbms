@@ -25,17 +25,13 @@ public class HsqldbPropertyDao implements PropertyDao {
 	@Override
 	public void set(Object id, String key, Object value) {
 		// TODO: this needs to be an upsert
-		String sql = "MERGE INTO property AS p" +
-		             "USING (VALUES(:id, :key, :value)) AS r(id,key,value)" +
-		             "ON p.element_id = r.id AND p.key = r.key" +
-		             "WHEN MATCHED THEN" +
-		             "      UPDATE SET p.value = r.value" +
-		             "WHEN NOT MATCHED THEN" +
+		String sql = "MERGE INTO property AS p " +
+		             "USING (VALUES(:id, :key, :value)) AS r(id,key,value) " +
+		             "ON p.element_id = r.id AND p.key = r.key " +
+		             "WHEN MATCHED THEN " +
+		             "      UPDATE SET p.value = r.value " +
+		             "WHEN NOT MATCHED THEN " +
 		             "    INSERT VALUES r.id, r.key, r.value";
-
-
-		String sql0 = "insert into property values (:id, :key, :value)";
-
 		try (Connection con = sql2o.open()) {
 			con.createQuery(sql)
                     .addParameter("id", id)

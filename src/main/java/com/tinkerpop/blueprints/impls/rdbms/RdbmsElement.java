@@ -62,19 +62,22 @@ public abstract class RdbmsElement implements Element {
     // =================================
     @Override
     public Set<String> getPropertyKeys() {
-//        if not populated
+//        if not populated:
 //            populate();
+//        return properties.keys
         return new HashSet<String>(properties_.keySet());
     }
     // =================================
     @Override
     public void setProperty(String key, Object value) {
-//        if not populated
+//        if not populated:
 //            push value
 //            populate
-//        else
-//            push value
-//            set into map
+//        else:
+//            check if value is the same as cached
+//            if no:
+//                push value
+//                set into map
 
         ElementHelper.validateProperty(this, key, value);
         
