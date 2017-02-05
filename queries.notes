@@ -1,0 +1,18 @@
+SELECT vertex.id FROM VERTEX
+left join vertex_property on vertex.id = vertex_property.vertex_id
+
+insert into "VERTEX_PROPERTY" (vertex_id, key, value) values (0, "name", "sam");
+
+SELECT vertex.id, vertex_id, key, value FROM VERTEX
+left outer join vertex_property on vertex.id = vertex_property.vertex_id
+where id = 0
+
+MERGE INTO property AS p
+USING (VALUES(1, 'sam', 'i am4')) AS r(id,key,value)
+ON p.element_id = r.id AND p.key = r.key
+WHEN MATCHED THEN
+    UPDATE SET p.value = r.value
+WHEN NOT MATCHED THEN
+    INSERT VALUES r.id, r.key, r.value
+
+
