@@ -81,8 +81,8 @@ public class HsqldbVertexDao implements VertexDao {
 
         try (Connection con = sql2o.open()) {
             log.info("remove vertex w id {}", id);
-            con.createQuery(sql0) .addParameter("id", id) .executeUpdate();
-            con.createQuery(sql1) .addParameter("id", id) .executeUpdate();
+            con.createQuery(sql0).addParameter("id", id).executeUpdate();
+            con.createQuery(sql1).addParameter("id", id).executeUpdate();
         }
     }
     // =================================

@@ -2,6 +2,7 @@
 package com.tinkerpop.blueprints.impls.rdbms.dao;
 
 
+import java.util.Map;
 import java.util.Set;
 
 import com.tinkerpop.blueprints.Edge;
@@ -29,8 +30,9 @@ public interface DaoFactory {
     interface PropertyDao {
     	void set(Object id, String key, Object value);
     	<T> T get(Object id, String key);
-    	<T> T remove(Object id, String key);
+    	void remove(Object id, String key);
     	Set<String> keys(Object id);
+		Map<String, Object> values(Object id);
     }
     // =================================
 
