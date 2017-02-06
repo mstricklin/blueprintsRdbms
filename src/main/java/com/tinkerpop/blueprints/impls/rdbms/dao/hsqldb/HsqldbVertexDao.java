@@ -1,32 +1,20 @@
 // CLASSIFICATION NOTICE: This file is UNCLASSIFIED
 package com.tinkerpop.blueprints.impls.rdbms.dao.hsqldb;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.collect.Lists.newArrayList;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 import javax.sql.DataSource;
 
-import org.apache.commons.dbutils.QueryRunner;
-import org.apache.commons.dbutils.handlers.ScalarHandler;
 import org.sql2o.Connection;
 import org.sql2o.ResultSetHandler;
 import org.sql2o.Sql2o;
 
-import com.google.common.base.Predicates;
-import com.google.common.collect.Iterables;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.impls.rdbms.RdbmsGraph;
 import com.tinkerpop.blueprints.impls.rdbms.RdbmsVertex;
-import com.tinkerpop.blueprints.impls.rdbms.dao.DaoFactory;
 import com.tinkerpop.blueprints.impls.rdbms.dao.DaoFactory.VertexDao;
 
-import javassist.expr.NewArray;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

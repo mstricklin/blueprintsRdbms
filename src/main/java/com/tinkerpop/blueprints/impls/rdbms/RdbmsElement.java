@@ -24,6 +24,7 @@ public abstract class RdbmsElement implements Element {
         dao = graph.getDaoFactory().getPropertyDao();
     }
     // =================================
+    // gonna be a lot of auto-boxing through this call...
     @SuppressWarnings("unchecked")
     @Override
     public <T> T getProperty(String key) {
@@ -38,14 +39,17 @@ public abstract class RdbmsElement implements Element {
         return new HashSet<String>(properties_.keySet());
     }
     // =================================
+    // gonna be a lot of auto-boxing through this call...
     @Override
     public void setProperty(String key, Object value) {
         ElementHelper.validateProperty(this, key, value);
-        
+
         log.info("set property, dao {}", dao);
         log.info("set prop for id {}: {}=>{}", id, key, value);
     	populate();
-    	log.info("prop class {}", properties_.get(key).getClass().getName());
+    	Object v = properties_.get(key);
+    	if (null != v)
+    	    log.info("prop class {}", properties_.get(key).getClass().getName());
     	if (Objects.equals(properties_.get(key), value)) {
     		log.info("property already set, returning {}=>{}", key, value);
     		return;

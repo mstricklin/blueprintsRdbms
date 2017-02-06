@@ -35,10 +35,14 @@ public interface DaoFactory {
 		Map<String, Object> values(Object id);
     }
     // =================================
+    interface SerializeDao {
+        void loadRegistrations();
+        <T> void addRegistration(T o);
+    }
+    // =================================
 
     VertexDao   getVertexDao();
     EdgeDao     getEdgeDao();
     PropertyDao getPropertyDao();
-
 
 }

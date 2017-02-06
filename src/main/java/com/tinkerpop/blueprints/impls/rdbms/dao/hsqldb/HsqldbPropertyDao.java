@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableMap;
 import com.tinkerpop.blueprints.impls.rdbms.RdbmsGraph;
 import com.tinkerpop.blueprints.impls.rdbms.RdbmsVertex;
 import com.tinkerpop.blueprints.impls.rdbms.dao.DaoFactory.PropertyDao;
+import com.tinkerpop.blueprints.impls.rdbms.dao.Serializer;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class HsqldbPropertyDao implements PropertyDao {
 
-	HsqldbPropertyDao(DataSource dataSource, RdbmsGraph graph) {
+	HsqldbPropertyDao(DataSource dataSource, RdbmsGraph graph, Serializer serializer) {
         ds = dataSource;
         this.graph = graph;
         sql2o = new Sql2o(dataSource);
@@ -89,26 +90,28 @@ public class HsqldbPropertyDao implements PropertyDao {
     private static class Property {
 		String key;
         Object value;
+        static Map<String, Object> makeMap(Iterable<Property> i) {
+            Map<String, Object> m = newHashMap();
+            for (Property p: i) {
+                log.info("prop {}=>{}", p.key, p.value);
+                m.put(p.key, p.value);
+            }
+            return m;
+        }
     }
 	// =================================
 	@Override
 	public Map<String, Object> values(Object id) {
         String sql = "select key, value from property " +
 	                 "where element_id = :id";
-        
+
         try (Connection con = sql2o.open()) {
         	log.info("get all properties for {}", id);
             List<Property> l = con.createQuery(sql)
             		              .addParameter("id", id)
                                   .executeAndFetch(Property.class);
-            Map<String, Object> m = newHashMap();
-            for (Property p: l) {
-            	log.info("prop {}=>{}", p.key, p.value);
-            	m.put(p.key, p.value);
-            }
-            return m;
+            return Property.makeMap(l);
         }
-        //return Collections.emptyMap();
 	}
 	// =================================
     private final DataSource ds;
