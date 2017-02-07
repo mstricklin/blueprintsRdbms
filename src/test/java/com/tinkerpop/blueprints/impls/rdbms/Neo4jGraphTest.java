@@ -23,14 +23,13 @@ public class Neo4jGraphTest extends GraphTest {
 //        VertexTestSuite vts = new VertexTestSuite(this);
 //        vts.testVertexEquality();
 
-//        Graph graph = generateGraph();
-//        Vertex v = graph.addVertex(null);
-//        Vertex u = graph.getVertex(v.getId());
-//        assertNotNull(u);
-//        log.info("retrieved vertex: {}", u);
-//        //u.setProperty(null, -1);
-//        printTestPerformance("VertexTestSuite", this.stopWatch());
-        assertTrue(true);
+        Graph graph = generateGraph();
+        Vertex v = graph.addVertex(null);
+        Vertex u = graph.getVertex(v.getId());
+        assertNotNull(u);
+        log.info("retrieved vertex: {}", u);
+        //u.setProperty(null, -1);
+        printTestPerformance("VertexTestSuite", this.stopWatch());
     }
     // =================================
     @Override

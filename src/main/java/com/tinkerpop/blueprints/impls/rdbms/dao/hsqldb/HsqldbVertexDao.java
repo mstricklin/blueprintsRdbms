@@ -38,7 +38,7 @@ public class HsqldbVertexDao implements VertexDao {
         String sql = "insert into vertex values (null)";
 
         try (Connection con = sql2o.open()) {
-            Integer genID = con.createQuery(sql, "add vertex", true)
+            Integer genID = con.createQuery(sql, true)
                                .executeUpdate()
                                .getKey(Integer.class);
             log.info("generated vertex id returned {}", genID);
@@ -53,7 +53,7 @@ public class HsqldbVertexDao implements VertexDao {
         String sql = "select * from vertex where id = :id";
 
         try (Connection con = sql2o.open()) {
-            RdbmsVertex v = con.createQuery(sql, "get vertex")
+            RdbmsVertex v = con.createQuery(sql)
                                .addParameter("id", id)
                                .executeAndFetchFirst(makeVertex);
             log.info("returned vertex for {}: {}", id, v);
@@ -69,10 +69,8 @@ public class HsqldbVertexDao implements VertexDao {
 
         try (Connection con = sql2o.open()) {
             log.info("remove vertex w id {}", id);
-            con.createQuery(sql0, "remove vertex "+id)
-                          .addParameter("id", id).executeUpdate();
-            con.createQuery(sql1, "remove properties for "+id)
-                          .addParameter("id", id).executeUpdate();
+            con.createQuery(sql0).addParameter("id", id).executeUpdate();
+            con.createQuery(sql1).addParameter("id", id).executeUpdate();
         }
     }
     // =================================
@@ -83,7 +81,7 @@ public class HsqldbVertexDao implements VertexDao {
         String sql = "select id from vertex";
 
         try (Connection con = sql2o.open()) {
-            return con.createQuery(sql, "get all vertices").executeAndFetch(makeVertex);
+            return con.createQuery(sql).executeAndFetch(makeVertex);
         }
     }
     // =================================
@@ -95,7 +93,7 @@ public class HsqldbVertexDao implements VertexDao {
         String sql = "select distinct element_id from property where key = :key and value = :value";
 
         try (Connection con = sql2o.open()) {
-            return con.createQuery(sql, "filtered vertices")
+            return con.createQuery(sql)
                     .addParameter("key", key)
                     .addParameter("value", value)
                     .addColumnMapping("element_id", "id")

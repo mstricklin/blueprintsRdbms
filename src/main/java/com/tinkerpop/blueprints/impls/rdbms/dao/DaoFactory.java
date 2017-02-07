@@ -5,7 +5,6 @@ package com.tinkerpop.blueprints.impls.rdbms.dao;
 import java.util.Map;
 import java.util.Set;
 
-import com.google.common.collect.ImmutableMap;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.impls.rdbms.RdbmsEdge;
@@ -32,18 +31,18 @@ public interface DaoFactory {
     	void set(Object id, String key, Object value);
     	<T> T get(Object id, String key);
     	void remove(Object id, String key);
-    	ImmutableMap<String, Object> properties(Object id);
+    	Set<String> keys(Object id);
+		Map<String, Object> values(Object id);
     }
     // =================================
     interface SerializerDao {
         Map<String, Integer> loadRegistrations();
-        void addRegistration(String clazzname, Integer id);
+        <T> void addRegistration(T o);
     }
     // =================================
 
     VertexDao   getVertexDao();
     EdgeDao     getEdgeDao();
     PropertyDao getPropertyDao();
-    void close();
 
 }

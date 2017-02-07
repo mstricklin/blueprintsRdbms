@@ -45,38 +45,40 @@ public class HsqldbKryoDao implements SerializerDao {
         loadRegistrations();
     }
     // =================================
-    // Oh, we're so overdue for lambdas...
-    private final ResultSetHandler<Map.Entry<String, Integer>> makeMakeEntry
-            = new ResultSetHandler<Map.Entry<String, Integer>>() {
-        @Override
-        public Map.Entry<String, Integer> handle(ResultSet rs) throws SQLException {
-            return new SimpleImmutableEntry<String, Integer>(rs.getString(1), rs.getInt(2));
-        }
-    };
-    // =================================
+    static final class ClassRegistration  {
+		String clazzname;
+        Integer id;
+        static Function<ClassRegistration, Map.Entry<String, Integer>> makeEntry
+                 = new Function<ClassRegistration, Map.Entry<String, Integer>>() {
+			@Override
+			public Entry<String, Integer> apply(ClassRegistration cr) {
+				return new SimpleImmutableEntry<String, Integer>(cr.clazzname, cr.id);
+			}
+        };
+    }
     @Override
     public Map<String, Integer> loadRegistrations() {
         String sql = "select classname, id from serial_mapping";
         try (Connection con = sql2o.open()) {
-            List<Map.Entry<String, Integer>> entries = con.createQuery(sql, "all serialization mappings")
-                                                          .executeAndFetch(makeMakeEntry);
-            return ImmutableMap.copyOf( entries );
+            List<ClassRegistration> l = con.createQuery(sql)
+                    .executeAndFetch(ClassRegistration.class);
+            return ImmutableMap.copyOf( Iterables.transform(l, ClassRegistration.makeEntry) );
         }
     }
     // =================================
-    // needs to be an upsert...
     @Override
-    public void addRegistration(String clazzname, Integer id) {
+    public <T> void addRegistration(T o) {
+        String clazzname = o.getClass().getName();
+        if (classMap.containsKey(clazzname))
+            return;
+
         log.info("registration not found for class {}", clazzname);
-        //Integer id = Integer.valueOf(kryo.register(o.getClass()).getId());
+        Integer id = Integer.valueOf(kryo.register(o.getClass()).getId());
         log.info("mapping to id {}", id);
         classMap.put(clazzname, id);
-        String sql = "insert into serial_mapping values (:classname, :id)";
+        String sql = "insert into serial_mapping values (:clazzname, :id)";
         try (Connection con = sql2o.open()) {
-            con.createQuery(sql, "add serialization mapping "+clazzname)
-                                .addParameter("classname", clazzname)
-                                .addParameter("id", id)
-                                .executeUpdate();
+            con.createQuery(sql).addParameter("clazzname", clazzname).addParameter("id", id).executeUpdate();
         }
 
     }
