@@ -82,7 +82,7 @@ public class RdbmsTest extends GraphTest {
         for (Vertex v: Iterables.limit(Lists.reverse(newArrayList(graph_.getVertices())), 2) ) {
             log.info("found vertex {}", v);
         }
-        log.info("=============== testing add/remove ===============");
+        log.info("=============== testing properties ===============");
 
         Vertex v3 = graph_.getVertex(Long.valueOf(1));
         log.info("got vertex when looking for 1: {}", v3);
@@ -90,7 +90,7 @@ public class RdbmsTest extends GraphTest {
         v3.setProperty("String", "string");
         v3.setProperty("Long", Long.valueOf(17));
         v3.setProperty("Integer", Integer.valueOf(18));
-        
+
         String s = v3.getProperty("sam");
         log.info("returned property: {}", s);
 

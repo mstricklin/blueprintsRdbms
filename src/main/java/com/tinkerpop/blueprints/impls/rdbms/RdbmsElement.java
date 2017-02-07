@@ -44,9 +44,9 @@ public abstract class RdbmsElement implements Element {
     public void setProperty(String key, Object value) {
         ElementHelper.validateProperty(this, key, value);
 
-        log.info("set property, dao {}", dao);
+        populate();
+
         log.info("set prop for id {}: {}=>{}", id, key, value);
-    	populate();
     	Object v = properties_.get(key);
     	if (null != v)
     	    log.info("prop class {}", properties_.get(key).getClass().getName());
@@ -99,7 +99,7 @@ public abstract class RdbmsElement implements Element {
     	log.info("Element populate {}", id);
     	if (populated_)
     		return;
-    	properties_ = newHashMap( dao.values(Integer.valueOf(id)) );
+    	properties_ = newHashMap( dao.properties(Integer.valueOf(id)) );
     	populated_ = true;
     }
     // =================================
