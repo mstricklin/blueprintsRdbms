@@ -2,27 +2,26 @@ package com.tinkerpop.blueprints.impls.rdbms.dao.hsqldb;
 
 import static com.google.common.collect.Maps.newHashMap;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.AbstractMap;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.AbstractMap.SimpleImmutableEntry;
+import java.util.Collections;
+import java.util.Map.Entry;
 
 import javax.sql.DataSource;
 
 import org.sql2o.Connection;
-import org.sql2o.ResultSetHandler;
 import org.sql2o.Sql2o;
 
+import com.google.common.base.Function;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import com.tinkerpop.blueprints.impls.rdbms.RdbmsGraph;
-import com.tinkerpop.blueprints.impls.rdbms.RdbmsVertex;
 import com.tinkerpop.blueprints.impls.rdbms.dao.DaoFactory.PropertyDao;
+import com.tinkerpop.blueprints.impls.rdbms.dao.hsqldb.HsqldbKryoDao.ClassRegistration;
 import com.tinkerpop.blueprints.impls.rdbms.dao.Serializer;
 
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -87,17 +86,16 @@ public class HsqldbPropertyDao implements PropertyDao {
 		return null;
 	}
 	// =================================
-    private static class Property {
+    static final class Property  {
 		String key;
-        Object value;
-        static Map<String, Object> makeMap(Iterable<Property> i) {
-            Map<String, Object> m = newHashMap();
-            for (Property p: i) {
-                log.info("prop {}=>{}", p.key, p.value);
-                m.put(p.key, p.value);
-            }
-            return m;
-        }
+        String value;
+        static Function<Property, Map.Entry<String, String>> makeEntry
+                 = new Function<Property, Map.Entry<String, String>>() {
+			@Override
+			public Entry<String, String> apply(Property p) {
+				return new SimpleImmutableEntry<String, String>(p.key, p.value);
+			}
+        };
     }
 	// =================================
 	@Override
@@ -110,7 +108,10 @@ public class HsqldbPropertyDao implements PropertyDao {
             List<Property> l = con.createQuery(sql)
             		              .addParameter("id", id)
                                   .executeAndFetch(Property.class);
-            return Property.makeMap(l);
+            ImmutableMap<String, String> m = ImmutableMap.copyOf( Iterables.transform(l, Property.makeEntry) );
+            log.info("props: {}", m);
+//            return Property.makeMap(l);
+            return Collections.emptyMap();
         }
 	}
 	// =================================

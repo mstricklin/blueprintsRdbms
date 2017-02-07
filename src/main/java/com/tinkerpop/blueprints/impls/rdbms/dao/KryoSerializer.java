@@ -1,18 +1,21 @@
 // CLASSIFICATION NOTICE: This file is UNCLASSIFIED
 package com.tinkerpop.blueprints.impls.rdbms.dao;
 
+import static com.google.common.collect.Maps.newConcurrentMap;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.util.Map;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.google.common.io.BaseEncoding;
-import com.tinkerpop.blueprints.impls.rdbms.dao.DaoFactory.SerializeDao;
+import com.tinkerpop.blueprints.impls.rdbms.dao.DaoFactory.SerializerDao;
 
 public class KryoSerializer implements Serializer {
 
-    public KryoSerializer(SerializeDao sd_) {
+    public KryoSerializer(SerializerDao sd_) {
         // TODO: should be thread-local. How handle registrations...?
         kryo = new Kryo();
         sd = sd_;
@@ -41,6 +44,7 @@ public class KryoSerializer implements Serializer {
     }
     // =================================
     private final Kryo kryo;
-    private final SerializeDao sd;
+    private final SerializerDao sd;
+    private final Map<String, Integer> classMap = newConcurrentMap();
 
 }

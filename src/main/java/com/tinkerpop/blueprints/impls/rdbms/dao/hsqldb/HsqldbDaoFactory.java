@@ -33,7 +33,7 @@ public class HsqldbDaoFactory implements DaoFactory {
 
         new SchemaVersionManager(cpm.getDataSource()).migrate();
 
-        SerializeDao sd = new HsqldbSerializerDao(ds);
+        SerializerDao sd = new HsqldbKryoDao(ds);
         serializer = new KryoSerializer(sd);
     }
     // =================================

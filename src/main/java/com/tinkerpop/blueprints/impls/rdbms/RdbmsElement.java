@@ -99,7 +99,7 @@ public abstract class RdbmsElement implements Element {
     	log.info("Element populate {}", id);
     	if (populated_)
     		return;
-    	properties_ = dao.values(Integer.valueOf(id));
+    	properties_ = newHashMap( dao.values(Integer.valueOf(id)) );
     	populated_ = true;
     }
     // =================================

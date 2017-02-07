@@ -6,28 +6,38 @@ import static com.google.common.collect.Maps.newHashMap;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.AbstractMap;
+import java.util.AbstractMap.SimpleImmutableEntry;
 
 import javax.sql.DataSource;
 
+import org.codehaus.groovy.runtime.metaclass.NewInstanceMetaMethod;
 import org.sql2o.Connection;
+import org.sql2o.ResultSetHandler;
 import org.sql2o.Sql2o;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.google.common.base.Function;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import com.google.common.io.BaseEncoding;
 import com.tinkerpop.blueprints.impls.rdbms.dao.Serializer;
-import com.tinkerpop.blueprints.impls.rdbms.dao.DaoFactory.SerializeDao;
+import com.tinkerpop.blueprints.impls.rdbms.dao.DaoFactory.SerializerDao;
 
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class HsqldbSerializerDao implements Serializer, SerializeDao {
+public class HsqldbKryoDao implements SerializerDao {
 
-    HsqldbSerializerDao(DataSource dataSource) {
+    HsqldbKryoDao(DataSource dataSource) {
         ds = dataSource;
         sql2o = new Sql2o(dataSource);
         // TODO: should be thread-local. How handle registrations...?
@@ -35,65 +45,30 @@ public class HsqldbSerializerDao implements Serializer, SerializeDao {
         loadRegistrations();
     }
     // =================================
-    @Override
-    public <T> String
-    serialize(T o) {
-        addRegistration(o);
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try (Output output = new Output(baos)) {
-            kryo.writeClassAndObject(output, o);
-        }
-        return BaseEncoding.base64().encode(baos.toByteArray());
+    static final class ClassRegistration  {
+		String clazzname;
+        Integer id;
+        static Function<ClassRegistration, Map.Entry<String, Integer>> makeEntry
+                 = new Function<ClassRegistration, Map.Entry<String, Integer>>() {
+			@Override
+			public Entry<String, Integer> apply(ClassRegistration cr) {
+				return new SimpleImmutableEntry<String, Integer>(cr.clazzname, cr.id);
+			}
+        };
     }
-
-    // =================================
     @Override
-    @SuppressWarnings("unchecked")
-    public <T> T
-    deserialize(String repr) {
-        byte[] bytes = BaseEncoding.base64().decode(repr);
-        ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-        try (Input input = new Input(bais)) {
-            return (T) kryo.readClassAndObject(input);
-        }
-    }
-    // =================================
-    @Override
-    public void loadRegistrations() {
-        // get pre-known registrations from Kryo...
-        for (int i = 0; i < kryo.getNextRegistrationId(); ++i) {
-            Registration r = kryo.getRegistration(i);
-            if (null != r)
-                classMap.put(r.getClass().getCanonicalName(), Integer.valueOf(r.getId()));
-        }
-
-        // get list from DB and merge in...
-        class ClassRegistration {
-            String clazzname;
-            Integer id;
-        }
+    public Map<String, Integer> loadRegistrations() {
         String sql = "select classname, id from serial_mapping";
         try (Connection con = sql2o.open()) {
             List<ClassRegistration> l = con.createQuery(sql)
                     .executeAndFetch(ClassRegistration.class);
-            for (ClassRegistration cr: l) {
-                log.info("registration {} => {}", cr.id, cr.clazzname);
-                try {
-                    Class<?> c = Class.forName(cr.clazzname);
-                    log.info("Kryo register {} => {}", cr.clazzname, cr.id);
-                    kryo.register(c, cr.id.intValue());
-                } catch (ClassNotFoundException e) {
-                    log.error("Cannot instantiate {} to register", cr.clazzname);
-                    log.error("", e);
-                }
-            }
+            return ImmutableMap.copyOf( Iterables.transform(l, ClassRegistration.makeEntry) );
         }
     }
     // =================================
     @Override
     public <T> void addRegistration(T o) {
-        String clazzname = o.getClass().getCanonicalName();
+        String clazzname = o.getClass().getName();
         if (classMap.containsKey(clazzname))
             return;
 
