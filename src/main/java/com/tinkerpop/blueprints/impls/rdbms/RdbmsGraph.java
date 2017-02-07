@@ -61,7 +61,7 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
 
         FEATURES.supportsDuplicateEdges = true;
         FEATURES.supportsSelfLoops = true;
-        FEATURES.isPersistent = false; // true
+        FEATURES.isPersistent = true;
         FEATURES.isWrapper = false;
         FEATURES.supportsVertexIteration = true;
         FEATURES.supportsEdgeIteration = true;
@@ -80,14 +80,9 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
     }
 
     private final String HIKARI_PREFIX = "blueprints.rdbms.hikari";
-    private final String QUERY_PREFIX = "queries";
-    private final String QUERY_FILE_PROPERTY = "blueprints.rdbms.queriesFile";
-    private final String DEFAULT_QUERY_FILE = "queries.properties";
     private final Properties queries_ = new Properties();
     // =================================
     public RdbmsGraph() {
-        cpm = null;
-        ds = null;
         dao = null;
     }
 
@@ -102,33 +97,6 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
         dao = HsqldbDaoFactory.make(
                 ConfigurationConverter.getProperties(configuration.subset(HIKARI_PREFIX)),
                 this);
-
-        Configuration hikariConfig = configuration.subset(HIKARI_PREFIX);
-        cpm = new ConnectionPoolManager(ConfigurationConverter.getProperties(hikariConfig));
-        ds = cpm.getDataSource();
-        log.info("CPM: {}", cpm);
-
-        new SchemaVersionManager(cpm.getDataSource()).migrate();
-
-//        Configuration queries = configuration.subset(QUERY_PREFIX);
-
-        String queryFile = configuration.getString(QUERY_FILE_PROPERTY, DEFAULT_QUERY_FILE);
-        log.info("====================");
-        log.info("Query file: {}", queryFile);
-
-        try {
-
-          InputStream is = getClass().getClassLoader().getResourceAsStream(queryFile);
-          queries_.load(is);
-          log.info("Queries: {}", queries_);
-          log.info("Queries: {}", queries_.getProperty("create.vertex", "foo"));
-
-
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            log.error("Error loading queries", e);
-        }
-
     }
     // =================================
     protected void dump() {
@@ -160,17 +128,17 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
     	return v;
     }
     // =================================
-    private static <T> T firstNonNull(T a, T b) {
-    	return a != null ? a : b;
-    }
-    // =================================
+    // would like to use cache's valueLoader, but it's possible to return null from the canonical store
     @Override
     public Vertex getVertex(final Object id) {
     	checkNotNull(id);
     	RdbmsVertex v = vertexCache.getIfPresent(id);
     	if (null!=v)
     		return v;
-        return dao.getVertexDao().get(id);
+        v = dao.getVertexDao().get(id);
+        if (null!=v)
+            vertexCache.put(v.getId(), v);
+        return v;
     }
     // =================================
     @Override
@@ -181,6 +149,7 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
     }
     // =================================
     // covariant types suck in Java...
+    // TODO: revisit this...can we be lazy?
 	@Override
     public Iterable<Vertex> getVertices() {
     	return ImmutableList.copyOf(dao.getVertexDao().list());
@@ -205,7 +174,9 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
     	RdbmsEdge e = edgeCache.getIfPresent(id);
     	if (null!=e)
     		return e;
-        return dao.getEdgeDao().get(id);
+        e = dao.getEdgeDao().get(id);
+        edgeCache.put(id, e);
+        return e;
     }
     // =================================
     @Override
@@ -284,12 +255,7 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
 
     @Override
     public void shutdown() {
-        try {
-            if (null != cpm)
-                cpm.close();
-        } catch (SQLException e) {
-            log.error("Error shutting down DB", e);
-        }
+        dao.close();
     }
 
     @Override
@@ -309,19 +275,14 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
     	return dao;
     }
     // =================================
-    protected Connection
-    dbConn() throws SQLException {
-        return ds.getConnection();
-    }
-    // =================================
     @Override
     public RdbmsGraph
     getRawGraph() {
         return this;
     }
     // =================================
-    private final ConnectionPoolManager cpm;
-    private final DataSource ds;
+//    private final ConnectionPoolManager cpm;
+//    private final DataSource ds;
     private final DaoFactory dao;
 
     private final Cache<Object, RdbmsVertex> vertexCache = CacheBuilder.newBuilder().maximumSize(CACHE_SIZE).build();
