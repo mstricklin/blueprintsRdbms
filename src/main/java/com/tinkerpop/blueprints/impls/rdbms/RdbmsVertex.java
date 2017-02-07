@@ -2,18 +2,14 @@
 package com.tinkerpop.blueprints.impls.rdbms;
 
 import static com.google.common.collect.Iterables.concat;
-import static com.google.common.collect.Lists.newArrayList;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 
-import org.sql2o.ResultSetHandler;
 
 import com.google.common.base.Predicates;
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import com.tinkerpop.blueprints.Direction;
@@ -34,6 +30,7 @@ public class RdbmsVertex extends RdbmsElement implements Vertex {
         super(vertexID, graph);
         // TODO: populate edges
     }
+
     // =================================
     @Override
     public Iterable<Edge> getEdges(Direction direction, String... labels) {
@@ -42,18 +39,18 @@ public class RdbmsVertex extends RdbmsElement implements Vertex {
         } else if (direction.equals(Direction.IN)) {
             return getEdges(inEdges, Arrays.asList(labels));
         } else {
-            return concat(getEdges(inEdges,  Arrays.asList(labels)),
-                          getEdges(outEdges, Arrays.asList(labels)));
+            return concat(getEdges(inEdges, Arrays.asList(labels)), getEdges(outEdges, Arrays.asList(labels)));
         }
     }
     // =================================
     // annoyingly, an empty label list is a special case for 'all'
     private Iterable<Edge> getEdges(Multimap<String, Edge> edges, Collection<String> labels) {
         if (labels.isEmpty())
-            return newArrayList(edges.values());
+            return ImmutableList.copyOf(edges.values());
         Multimap<String, Edge> m = Multimaps.filterKeys(edges, Predicates.in(labels));
-        return newArrayList(m.values());
+        return ImmutableList.copyOf(m.values());
     }
+
     // =================================
     @Override
     public Iterable<Vertex> getVertices(Direction direction, String... labels) {
@@ -69,13 +66,15 @@ public class RdbmsVertex extends RdbmsElement implements Vertex {
     public Edge addEdge(String label, Vertex vertex) {
         return getGraph().addEdge(null, this, vertex, label);
     }
+
     // =================================
     protected void addOutEdge(String label, Edge e) {
-        outEdges.put(label,  e);
+        outEdges.put(label, e);
     }
+
     // =================================
     protected void addInEdge(String label, Edge e) {
-        inEdges.put(label,  e);
+        inEdges.put(label, e);
     }
     // =================================
     @Override
@@ -94,7 +93,11 @@ public class RdbmsVertex extends RdbmsElement implements Vertex {
         return StringFactory.vertexString(this);
     }
     // =================================
-    private Multimap<String, Edge> outEdges = ArrayListMultimap.create();
-    private Multimap<String, Edge> inEdges  = ArrayListMultimap.create();
+    // yay, type-erasure.
+    private static final Multimap<String, Edge> typedMultiMap() {
+        return ArrayListMultimap.create();
+    }
+    private Multimap<String, Edge> outEdges = Multimaps.synchronizedMultimap(typedMultiMap());
+    private Multimap<String, Edge> inEdges = Multimaps.synchronizedMultimap(typedMultiMap());
 
 }

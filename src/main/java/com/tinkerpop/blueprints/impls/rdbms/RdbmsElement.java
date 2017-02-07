@@ -96,7 +96,6 @@ public abstract class RdbmsElement implements Element {
     // =================================
     private void populate() {
         // TODO: ain't thread-safe
-    	log.info("Element populate {}", id);
     	if (populated_)
     		return;
     	properties_ = newHashMap( dao.properties(Integer.valueOf(id)) );

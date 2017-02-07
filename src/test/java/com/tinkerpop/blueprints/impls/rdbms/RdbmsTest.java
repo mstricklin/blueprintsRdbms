@@ -86,13 +86,22 @@ public class RdbmsTest extends GraphTest {
 
         Vertex v3 = graph_.getVertex(Long.valueOf(1));
         log.info("got vertex when looking for 1: {}", v3);
+
+        String s = v3.getProperty("sam");
+        log.info("returned property: {}", s);
+
+        Long l = v3.getProperty("Long");
+        log.info("returned property: {}", l);
+        Object o = v3.getProperty("Long");
+        log.info("returned property type: {}", o.getClass().getName());
+
         v3.setProperty("sam", "i am43");
         v3.setProperty("String", "string");
         v3.setProperty("Long", Long.valueOf(17));
         v3.setProperty("Integer", Integer.valueOf(18));
 
-        String s = v3.getProperty("sam");
-        log.info("returned property: {}", s);
+        String s0 = v3.getProperty("sam");
+        log.info("returned property: {}", s0);
 
 //
 //        this.stopWatch();

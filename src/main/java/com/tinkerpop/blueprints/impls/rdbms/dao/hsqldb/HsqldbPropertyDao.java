@@ -30,9 +30,9 @@ public class HsqldbPropertyDao implements PropertyDao {
     // =================================
 	@Override
 	public void set(Object id, String key, Object value) {
-	    // TODO: Need to serialize...
-	    String s = serializer.serialize(value);
-	    log.info("serialized verion of {} is '{}'", value, s);
+	    // TODO: clean up serialization
+	    String serializedValue = serializer.serialize(value);
+	    log.info("serialized verion of {} is '{}'", value, serializedValue);
 
 		String sql = "MERGE INTO property AS p " +
 		             "USING (VALUES(:id, :key, :value)) AS r(id,key,value) " +
@@ -45,7 +45,7 @@ public class HsqldbPropertyDao implements PropertyDao {
 			con.createQuery(sql, "update property")
                     .addParameter("id", id)
                     .addParameter("key", key)
-                    .addParameter("value", value)
+                    .addParameter("value", serializedValue)
 					.executeUpdate();
 			log.info("set property {}={} for element id {}", key, value, id);
 		}
@@ -57,12 +57,14 @@ public class HsqldbPropertyDao implements PropertyDao {
 		log.info("property get {} {}", id, key);
 		String sql = "select value from property where element_id = :id and key = :key";
 		try (Connection con = sql2o.open()) {
-            String val = con.createQuery(sql, "get property")
+            String value = con.createQuery(sql, "get property")
                                .addParameter("id", id)
                                .addParameter("key", key)
                                .executeScalar(String.class);
-            log.info("returned prop for {} {}: {}", id, key, val);
-            return (T)val;
+            log.info("returned prop for {} {}: {}", id, key, value);
+            Object o = serializer.deserialize(value);
+            log.info("deserialized: {}", o);
+            return (T)o;
         }
 	}
 	// =================================
@@ -79,11 +81,12 @@ public class HsqldbPropertyDao implements PropertyDao {
         }
 	}
 	// =================================
-    private final ResultSetHandler<Map.Entry<String, String>> makeProperty
-            = new ResultSetHandler<Map.Entry<String, String>>() {
+    private final ResultSetHandler<Map.Entry<String, Object>> makeProperty
+            = new ResultSetHandler<Map.Entry<String, Object>>() {
         @Override
-        public Map.Entry<String, String> handle(ResultSet rs) throws SQLException {
-            return new SimpleImmutableEntry<String, String>(rs.getString(1), rs.getString(2));
+        public Map.Entry<String, Object> handle(ResultSet rs) throws SQLException {
+            Object o = serializer.deserialize(rs.getString(2));
+            return new SimpleImmutableEntry<String, Object>(rs.getString(1), o);
         }
     };
 	// =================================
@@ -94,14 +97,14 @@ public class HsqldbPropertyDao implements PropertyDao {
 
         try (Connection con = sql2o.open()) {
         	log.info("get all properties for {}", id);
-            List<Map.Entry<String, String>> entryList = con.createQuery(sql, "get all properties "+id)
+            List<Map.Entry<String, Object>> entryList = con.createQuery(sql, "get all properties "+id)
             		              .addParameter("id", id)
                                   .executeAndFetch(makeProperty);
             // TODO: Need to deserialize...
-            ImmutableMap<String, String> entryMap = ImmutableMap.copyOf( entryList );
+            ImmutableMap<String, Object> entryMap = ImmutableMap.copyOf( entryList );
             log.info("props: {}", entryMap);
 //            return m;
-            return ImmutableMap.of();
+            return entryMap;
         }
 	}
 	// =================================

@@ -3,25 +3,19 @@ package com.tinkerpop.blueprints.impls.rdbms;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
-import java.util.List;
 import java.util.Map.Entry;
-import java.util.NoSuchElementException;
-
-import javax.sql.DataSource;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationConverter;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.CacheLoader.InvalidCacheLoadException;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
@@ -42,8 +36,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexableGraph, MetaGraph<RdbmsGraph> {
 
+    private static final int DEFAULT_CACHE_SIZE = 1000;
+    private static final String CACHE_CONFIG = "blueprints.rdbms.cacheSize";
     private static final Features FEATURES = new Features();
-    private static final int CACHE_SIZE = 1000;
 
     static {
         // TODO: revisit this...
@@ -68,7 +63,7 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
         FEATURES.supportsVertexIndex = true;
         FEATURES.supportsEdgeIndex = true;
         FEATURES.ignoresSuppliedIds = true;
-        FEATURES.supportsTransactions = false;  //true
+        FEATURES.supportsTransactions = false; // true
         FEATURES.supportsIndices = true;
         FEATURES.supportsKeyIndices = true;
         FEATURES.supportsVertexKeyIndex = true;
@@ -80,10 +75,12 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
     }
 
     private final String HIKARI_PREFIX = "blueprints.rdbms.hikari";
-    private final Properties queries_ = new Properties();
+
     // =================================
     public RdbmsGraph() {
         dao = null;
+        vertexCache = null;
+        edgeCache = null;
     }
 
     // =================================
@@ -94,25 +91,24 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
             }
         }
 
-        dao = HsqldbDaoFactory.make(
-                ConfigurationConverter.getProperties(configuration.subset(HIKARI_PREFIX)),
-                this);
+        int cacheSize = configuration.getInt(CACHE_CONFIG, DEFAULT_CACHE_SIZE);
+        vertexCache = CacheBuilder.newBuilder().concurrencyLevel(4).maximumSize(cacheSize).build(vertexLoader);
+        edgeCache = CacheBuilder.newBuilder().concurrencyLevel(4).maximumSize(cacheSize).build(edgeLoader);
+
+        dao = HsqldbDaoFactory.make(ConfigurationConverter.getProperties(configuration.subset(HIKARI_PREFIX)), this);
     }
+
     // =================================
     protected void dump() {
         if (log.isDebugEnabled()) {
             log.debug("RdbmsGraph vertices...");
-//            for (Vertex v: getVertices()) {
-//                log.debug(v.toString());
-//            }
-//            log.debug("RdbmsGraph edges...");
-//            for (Edge e: getEdges()) {
-//                log.debug(e.toString());
-//            }
-            log.debug("RdbmsGraph queries...");
-            for (Entry<Object, Object> e: queries_.entrySet()) {
-                log.debug("{} => {}", e.getKey(), e.getValue());
+            for (Vertex v : getVertices()) {
+                log.debug(v.toString());
             }
+            // log.debug("RdbmsGraph edges...");
+            // for (Edge e: getEdges()) {
+            // log.debug(e.toString());
+            // }
         }
     }
     // =================================
@@ -123,80 +119,85 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
     // =================================
     @Override
     public Vertex addVertex(Object id) {
-    	RdbmsVertex v = dao.getVertexDao().add();
-    	vertexCache.put(v.getId(), v);
-    	return v;
-    }
-    // =================================
-    // would like to use cache's valueLoader, but it's possible to return null from the canonical store
-    @Override
-    public Vertex getVertex(final Object id) {
-    	checkNotNull(id);
-    	RdbmsVertex v = vertexCache.getIfPresent(id);
-    	if (null!=v)
-    		return v;
-        v = dao.getVertexDao().get(id);
-        if (null!=v)
-            vertexCache.put(v.getId(), v);
+        RdbmsVertex v = dao.getVertexDao().add();
+        vertexCache.put(v.getId(), v);
         return v;
     }
     // =================================
     @Override
+    public Vertex getVertex(final Object id) {
+        checkNotNull(id);
+        try {
+            return vertexCache.get(id);
+        } catch (ExecutionException | InvalidCacheLoadException e) {
+            log.error("could not find vertex w id {}", id);
+        }
+        return null;
+    }
+
+    // =================================
+    @Override
     public void removeVertex(Vertex vertex) {
         checkNotNull(vertex);
-        vertexCache.invalidate(vertex.getId());
-        dao.getVertexDao().remove(vertex.getId());
+        synchronized (this) {
+            vertexCache.invalidate(vertex.getId());
+            dao.getVertexDao().remove(vertex.getId());
+        }
     }
     // =================================
     // covariant types suck in Java...
     // TODO: revisit this...can we be lazy?
-	@Override
+    @Override
     public Iterable<Vertex> getVertices() {
-    	return ImmutableList.copyOf(dao.getVertexDao().list());
+        return ImmutableList.copyOf(dao.getVertexDao().list());
     }
     // =================================
     @SuppressWarnings("unchecked")
-	@Override
+    @Override
     public Iterable<Vertex> getVertices(String key, Object value) {
-    	return (Iterable<Vertex>)(dao.getVertexDao().list(key, value));
+        return (Iterable<Vertex>) (dao.getVertexDao().list(key, value));
     }
     // =================================
     @Override
     public Edge addEdge(Object id, Vertex outVertex, Vertex inVertex, String label) {
-    	RdbmsEdge e = dao.getEdgeDao().add(outVertex, inVertex, label);
-    	edgeCache.put(e.getId(), e);
-    	return e;
-    }
-    // =================================
-    @Override
-    public Edge getEdge(Object id) {
-    	checkNotNull(id);
-    	RdbmsEdge e = edgeCache.getIfPresent(id);
-    	if (null!=e)
-    		return e;
-        e = dao.getEdgeDao().get(id);
-        edgeCache.put(id, e);
+        RdbmsEdge e = dao.getEdgeDao().add(outVertex, inVertex, label);
+        edgeCache.put(e.getId(), e);
         return e;
     }
     // =================================
     @Override
+    public Edge getEdge(Object id) {
+        checkNotNull(id);
+        try {
+            return edgeCache.get(id);
+        } catch (ExecutionException | InvalidCacheLoadException e) {
+            log.error("could not find edge w id {}", id);
+        }
+        return null;
+    }
+    // =================================
+    @Override
     public void removeEdge(Edge edge) {
-    	checkNotNull(edge);
-        vertexCache.invalidate(edge.getId());
-        dao.getEdgeDao().remove(edge.getId());
+        checkNotNull(edge);
+        synchronized (this) {
+            vertexCache.invalidate(edge.getId());
+            dao.getEdgeDao().remove(edge.getId());
+        }
     }
     // =================================
     // covariant types suck in Java...
-	@Override
+    @Override
     public Iterable<Edge> getEdges() {
-    	return ImmutableList.copyOf(dao.getEdgeDao().list());
+        return ImmutableList.copyOf(dao.getEdgeDao().list());
     }
+
     // =================================
     @SuppressWarnings("unchecked")
     @Override
     public Iterable<Edge> getEdges(String key, Object value) {
-    	return (Iterable<Edge>)(dao.getEdgeDao().list(key, value));
+        return (Iterable<Edge>) (dao.getEdgeDao().list(key, value));
     }
+
     // =================================
     @Override
     public GraphQuery query() {
@@ -269,23 +270,37 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
         // TODO Auto-generated method stub
 
     }
+
     // =================================
-    protected DaoFactory
-    getDaoFactory() {
-    	return dao;
+    protected DaoFactory getDaoFactory() {
+        return dao;
     }
+
     // =================================
     @Override
-    public RdbmsGraph
-    getRawGraph() {
+    public RdbmsGraph getRawGraph() {
         return this;
     }
+
     // =================================
-//    private final ConnectionPoolManager cpm;
-//    private final DataSource ds;
+    private CacheLoader<Object, RdbmsVertex> vertexLoader = new CacheLoader<Object, RdbmsVertex>() {
+        @Override
+        public RdbmsVertex load(Object key) throws Exception {
+            log.info("using cacheLoader for vertex");
+            return dao.getVertexDao().get(key);
+        }
+    };
+    private CacheLoader<Object, RdbmsEdge> edgeLoader = new CacheLoader<Object, RdbmsEdge>() {
+        @Override
+        public RdbmsEdge load(Object key) throws Exception {
+            log.info("using cacheLoader for edge");
+            return dao.getEdgeDao().get(key);
+        }
+    };
+    // =================================
     private final DaoFactory dao;
 
-    private final Cache<Object, RdbmsVertex> vertexCache = CacheBuilder.newBuilder().maximumSize(CACHE_SIZE).build();
-    private final Cache<Object, RdbmsEdge>   edgeCache = CacheBuilder.newBuilder().maximumSize(CACHE_SIZE).build();
+    private final LoadingCache<Object, RdbmsVertex> vertexCache;
+    private final LoadingCache<Object, RdbmsEdge> edgeCache;
 
 }
