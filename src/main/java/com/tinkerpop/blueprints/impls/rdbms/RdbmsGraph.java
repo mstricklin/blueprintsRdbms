@@ -30,6 +30,7 @@ import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.impls.rdbms.dao.DaoFactory;
 import com.tinkerpop.blueprints.impls.rdbms.dao.hsqldb.HsqldbDaoFactory;
+import com.tinkerpop.blueprints.impls.rdbms.util.CovariantIterable;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -149,13 +150,12 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
     // TODO: revisit this...can we be lazy?
     @Override
     public Iterable<Vertex> getVertices() {
-        return ImmutableList.copyOf(dao.getVertexDao().list());
+        return new CovariantIterable<Vertex>(dao.getVertexDao().list());
     }
     // =================================
-    @SuppressWarnings("unchecked")
     @Override
     public Iterable<Vertex> getVertices(String key, Object value) {
-        return (Iterable<Vertex>) (dao.getVertexDao().list(key, value));
+        return new CovariantIterable<Vertex>(dao.getVertexDao().list(key, value));
     }
     // =================================
     @Override
@@ -180,7 +180,7 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
     public void removeEdge(Edge edge) {
         checkNotNull(edge);
         synchronized (this) {
-            vertexCache.invalidate(edge.getId());
+            edgeCache.invalidate(edge.getId());
             dao.getEdgeDao().remove(edge.getId());
         }
     }
@@ -188,14 +188,13 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
     // covariant types suck in Java...
     @Override
     public Iterable<Edge> getEdges() {
-        return ImmutableList.copyOf(dao.getEdgeDao().list());
+        return new CovariantIterable<Edge>(dao.getEdgeDao().list());
     }
 
     // =================================
-    @SuppressWarnings("unchecked")
     @Override
     public Iterable<Edge> getEdges(String key, Object value) {
-        return (Iterable<Edge>) (dao.getEdgeDao().list(key, value));
+        return new CovariantIterable<Edge>(dao.getEdgeDao().list(key, value));
     }
 
     // =================================

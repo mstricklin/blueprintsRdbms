@@ -64,6 +64,7 @@ public class RdbmsVertex extends RdbmsElement implements Vertex {
     // =================================
     @Override
     public Edge addEdge(String label, Vertex vertex) {
+        // add to self list
         return getGraph().addEdge(null, this, vertex, label);
     }
 

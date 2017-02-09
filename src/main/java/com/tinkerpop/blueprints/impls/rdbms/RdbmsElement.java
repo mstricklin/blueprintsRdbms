@@ -8,11 +8,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import com.google.common.collect.ImmutableSet;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.impls.rdbms.dao.DaoFactory.PropertyDao;
 import com.tinkerpop.blueprints.util.ElementHelper;
 
+import groovy.lang.Immutable;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -24,7 +26,6 @@ public abstract class RdbmsElement implements Element {
         dao = graph.getDaoFactory().getPropertyDao();
     }
     // =================================
-    // gonna be a lot of auto-boxing through this call...
     @SuppressWarnings("unchecked")
     @Override
     public <T> T getProperty(String key) {
@@ -36,7 +37,7 @@ public abstract class RdbmsElement implements Element {
     @Override
     public Set<String> getPropertyKeys() {
     	populate();
-        return new HashSet<String>(properties_.keySet());
+    	return ImmutableSet.copyOf(properties_.keySet());
     }
     // =================================
     // gonna be a lot of auto-boxing through this call...

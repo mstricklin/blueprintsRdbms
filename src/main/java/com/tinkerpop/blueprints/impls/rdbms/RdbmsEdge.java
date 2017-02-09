@@ -15,7 +15,7 @@ public class RdbmsEdge extends RdbmsElement implements Edge {
 
  // =================================
     public RdbmsEdge(final int vertexID, final int outID, final int inID, final String label, final RdbmsGraph graph) {
-        // TODO: think about coherence here...
+        // TODO: fix coherence here...
         super(vertexID, graph);
         this.outVertex = new RdbmsVertex(outID, graph);
         this.inVertex = new RdbmsVertex(inID, graph);
