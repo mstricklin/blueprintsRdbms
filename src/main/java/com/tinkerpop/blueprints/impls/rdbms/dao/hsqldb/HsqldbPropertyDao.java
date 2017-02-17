@@ -37,7 +37,7 @@ public class HsqldbPropertyDao implements PropertyDao {
 	}
     // =================================
 	@Override
-	public void set(Object id, String key, Object value) {
+	public void set(long id, String key, Object value) {
 	    // TODO: clean up serialization
 	    String serializedValue = serializer.serialize(value);
 	    log.info("serialized verion of {} is '{}'", value, serializedValue);
@@ -61,7 +61,7 @@ public class HsqldbPropertyDao implements PropertyDao {
 	// =================================
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T> T get(Object id, String key) {
+	public <T> T get(long id, String key) {
 		log.info("property get {} {}", id, key);
 		String sql = "select value from property where element_id = :id and key = :key";
 		try (Connection con = sql2o.open()) {
@@ -77,7 +77,7 @@ public class HsqldbPropertyDao implements PropertyDao {
 	}
 	// =================================
 	@Override
-	public void remove(Object id, String key) {
+	public void remove(long id, String key) {
 		String sql = "delete from property " +
 		             "where element_id = :id and key = :key";
 		try (Connection con = sql2o.open()) {
@@ -86,6 +86,7 @@ public class HsqldbPropertyDao implements PropertyDao {
                                 .addParameter("key", key)
                                 .executeUpdate();
             log.info("deleted prop for {} {}", id, key);
+
         }
 	}
 	// =================================
@@ -99,7 +100,7 @@ public class HsqldbPropertyDao implements PropertyDao {
     };
 	// =================================
 	@Override
-	public ImmutableMap<String, Object> properties(Object id) {
+	public ImmutableMap<String, Object> properties(long id) {
         String sql = "select key, value from property " +
 	                 "where element_id = :id";
 
@@ -108,7 +109,6 @@ public class HsqldbPropertyDao implements PropertyDao {
             List<Map.Entry<String, Object>> entryList = con.createQuery(sql, "get all properties "+id)
             		              .addParameter("id", id)
                                   .executeAndFetch(makeProperty);
-            // TODO: Need to deserialize...
             ImmutableMap<String, Object> entryMap = ImmutableMap.copyOf( entryList );
             log.info("props: {}", entryMap);
             return entryMap;

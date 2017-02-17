@@ -3,6 +3,7 @@ package com.tinkerpop.blueprints.impls.rdbms.dao.hsqldb;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.Collections;
 
 import javax.sql.DataSource;
@@ -22,7 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class HsqldbEdgeDao implements EdgeDao {
-
+    // TODO: move queries to properties file
     HsqldbEdgeDao(DataSource dataSource, RdbmsGraph graph) {
         ds = dataSource;
         this.graph = graph;
@@ -32,12 +33,11 @@ public class HsqldbEdgeDao implements EdgeDao {
     private ResultSetHandler<RdbmsEdge> makeEdge = new ResultSetHandler<RdbmsEdge>() {
         @Override
         public RdbmsEdge handle(ResultSet rs) throws SQLException {
-            // TODO: think about coherence here...
-            log.error("making new vertices, not pulling canonical");
-            Vertex in = new RdbmsVertex(rs.getInt(2), graph);
-            Vertex out = new RdbmsVertex(rs.getInt(3), graph);
-            String label = rs.getString(4);
-            return new RdbmsEdge(rs.getInt(1), out, in, label, graph);
+            return new RdbmsEdge(rs.getLong(1),
+                    rs.getLong(2),
+                    rs.getLong(3),
+                    rs.getString(4),
+                    graph);
         }
     };
     // =================================
@@ -51,23 +51,23 @@ public class HsqldbEdgeDao implements EdgeDao {
     // =================================
     // TODO
     @Override
-    public RdbmsEdge add(Vertex outVertex, Vertex inVertex, String label) {
+    public RdbmsEdge add(long outVertexID, long inVertexID, final String label) {
         String sql = "insert into edge (out_vertex_id, in_vertex_id, label) values (:outID, :inID, :label)";
 
         try (Connection con = sql2o.open()) {
-            Integer genID = con.createQuery(sql, "add edge", true)
-                               .addParameter("outID", outVertex.getId())
-                               .addParameter("inID", inVertex.getId())
+            Long genID = con.createQuery(sql, "add edge", true)
+                               .addParameter("outID", outVertexID)
+                               .addParameter("inID", inVertexID)
                                .addParameter("label", label)
                                .executeUpdate()
-                               .getKey(Integer.class);
+                               .getKey(Long.class);
             log.info("generated edge id returned {}", genID);
-            return new RdbmsEdge(genID.intValue(), outVertex, inVertex, label, graph);
+            return new RdbmsEdge(genID.longValue(), outVertexID, inVertexID, label, graph);
         }
     }
     // =================================
     @Override
-    public RdbmsEdge get(Object id) {
+    public RdbmsEdge get(long id) {
         // TODO: this can be heavily optimized...any time one does a 'getProperty' on each
         // edge in turn, it adds another round-trip to the DB
         String sql = "select * from edge where id = :id";
@@ -82,7 +82,7 @@ public class HsqldbEdgeDao implements EdgeDao {
     }
     // =================================
     @Override
-    public void remove(Object id) {
+    public void remove(long id) {
         String sql0 = "delete from edge where id = :id";
         String sql1 = "delete from property where element_id = :id";
 
@@ -94,10 +94,10 @@ public class HsqldbEdgeDao implements EdgeDao {
     }
     // =================================
     @Override
-    public Iterable<? extends Edge> list() {
+    public Iterable<RdbmsEdge> list() {
         // TODO: this can be heavily optimized...any time one does a 'getProperty' on each
         // vertex in turn, it adds another round-trip to the DB
-        String sql = "select id from edge";
+        String sql = "select * from edge";
 
         try (org.sql2o.Connection con = sql2o.open()) {
             log.info("request all edges");
@@ -107,8 +107,18 @@ public class HsqldbEdgeDao implements EdgeDao {
     }
     // =================================
     @Override
-    public Iterable<? extends Edge> list(String key, Object value) {
+    public Iterable<RdbmsEdge> list(String key, Object value) {
         return Collections.emptyList();
+    }
+    // =================================
+    static String sqlEdgeByVertex = "select * from edge where out_vertex_id = :id or in_vertex_id = :id";
+    @Override
+    public Iterable<RdbmsEdge> list(Long vertexId) {
+        try (Connection con = sql2o.open()) {
+            return con.createQuery(sqlEdgeByVertex, "get edges by vertex "+vertexId)
+                    .addParameter("id", vertexId)
+                    .executeAndFetch(makeEdge);
+        }
     }
     // =================================
     private final DataSource ds;

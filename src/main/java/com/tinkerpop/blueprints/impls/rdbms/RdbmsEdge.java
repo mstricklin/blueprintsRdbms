@@ -13,29 +13,28 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class RdbmsEdge extends RdbmsElement implements Edge {
 
- // =================================
-    public RdbmsEdge(final int vertexID, final int outID, final int inID, final String label, final RdbmsGraph graph) {
-        // TODO: fix coherence here...
-        super(vertexID, graph);
-        this.outVertex = new RdbmsVertex(outID, graph);
-        this.inVertex = new RdbmsVertex(inID, graph);
-        this.label = label;
-    }
     // =================================
-    public RdbmsEdge(final int vertexID, final Vertex outVertex, final Vertex inVertex, final String label, final RdbmsGraph graph) {
-        super(vertexID, graph);
-        this.outVertex = outVertex;
-        this.inVertex = inVertex;
+    public RdbmsEdge(final long edgeID, final long outID, final long inID, final String label, final RdbmsGraph graph) {
+        super(edgeID, graph);
+        this.outVertexId = outID;
+        this.inVertexId = inID;
         this.label = label;
     }
     // =================================
     @Override
     public Vertex getVertex(Direction direction) throws IllegalArgumentException {
         if (direction.equals(Direction.OUT))
-            return outVertex;
+            return getOutVertex();
         if (direction.equals(Direction.IN))
-            return inVertex;
+            return getInVertex();
         throw ExceptionFactory.bothIsNotSupported();
+    }
+    // =================================
+    RdbmsVertex getOutVertex() {
+        return (RdbmsVertex)graph.getVertex(outVertexId);
+    }
+    RdbmsVertex getInVertex() {
+        return (RdbmsVertex)graph.getVertex(inVertexId);
     }
     // =================================
     @Override
@@ -53,8 +52,9 @@ public class RdbmsEdge extends RdbmsElement implements Edge {
         return StringFactory.edgeString(this);
     }
     // =================================
-    private final Vertex outVertex;
-    private final Vertex inVertex;
+    private final long outVertexId;
+    private final long inVertexId;
+
     private final String label;
 
 }

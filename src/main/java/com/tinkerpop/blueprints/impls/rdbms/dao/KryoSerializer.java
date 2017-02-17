@@ -24,7 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 public class KryoSerializer implements Serializer {
 
     public KryoSerializer(SerializerDao sd_) {
-        // TODO: should be thread-local. How handle registrations on a per-thread basis?
+        // TODO: should be thread-local(?) How handle registrations on a per-thread basis?
         kryo = new Kryo();
         serializerDao = sd_;
 

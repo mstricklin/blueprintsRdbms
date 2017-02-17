@@ -29,7 +29,7 @@ public class HsqldbVertexDao implements VertexDao {
     private ResultSetHandler<RdbmsVertex> makeVertex = new ResultSetHandler<RdbmsVertex>() {
         @Override
         public RdbmsVertex handle(ResultSet rs) throws SQLException {
-            return new RdbmsVertex(rs.getInt(1), graph);
+            return new RdbmsVertex(rs.getLong(1), graph);
         }
     };
     // =================================
@@ -46,16 +46,16 @@ public class HsqldbVertexDao implements VertexDao {
         String sql = "insert into vertex values (null)";
 
         try (Connection con = sql2o.open()) {
-            Integer genID = con.createQuery(sql, "add vertex", true)
+            Long genID = con.createQuery(sql, "add vertex", true)
                                .executeUpdate()
-                               .getKey(Integer.class);
+                               .getKey(Long.class);
             log.info("generated vertex id returned {}", genID);
-            return new RdbmsVertex(genID.intValue(), graph);
+            return new RdbmsVertex(genID.longValue(), graph);
         }
     }
     // =================================
     @Override
-    public RdbmsVertex get(Object id) {
+    public RdbmsVertex get(long id) {
         // TODO: this needs to be heavily optimized...any time one does a 'getProperty' on each
         // vertex in turn, it adds another round-trip to the DB
         String sql = "select * from vertex where id = :id";
@@ -70,7 +70,7 @@ public class HsqldbVertexDao implements VertexDao {
     }
     // =================================
     @Override
-    public void remove(Object id) {
+    public void remove(long id) {
 
         String sql0 = "delete from vertex where id = :id";
         String sql1 = "delete from property where element_id = :id";
@@ -85,7 +85,7 @@ public class HsqldbVertexDao implements VertexDao {
     }
     // =================================
     @Override
-    public Iterable<? extends Vertex> list() {
+    public Iterable<RdbmsVertex> list() {
         // TODO: this can be heavily optimized...any time one does a 'getProperty' on each
         // vertex in turn, it adds another round-trip to the DB
         String sql = "select id from vertex";
@@ -96,7 +96,7 @@ public class HsqldbVertexDao implements VertexDao {
     }
     // =================================
     @Override
-    public Iterable<? extends Vertex> list(String key, Object value) {
+    public Iterable<RdbmsVertex> list(String key, Object value) {
         // TODO: this can be heavily optimized...any time one does a 'getProperty' on each
         // vertex in turn, it adds another round-trip to the DB
         // TODO: how to we serialize properties?

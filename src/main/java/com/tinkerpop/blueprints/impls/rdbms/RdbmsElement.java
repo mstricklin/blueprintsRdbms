@@ -3,23 +3,24 @@ package com.tinkerpop.blueprints.impls.rdbms;
 
 import static com.google.common.collect.Maps.newHashMap;
 
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import com.google.common.collect.ImmutableSet;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.impls.rdbms.dao.DaoFactory.PropertyDao;
 import com.tinkerpop.blueprints.util.ElementHelper;
 
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public abstract class RdbmsElement implements Element {
 
-    RdbmsElement(final int id_, final RdbmsGraph graph_) {
+    RdbmsElement(final long id_, final RdbmsGraph graph_) {
         id = id_;
         graph = graph_;
         dao = graph.getDaoFactory().getPropertyDao();
@@ -28,7 +29,6 @@ public abstract class RdbmsElement implements Element {
     @SuppressWarnings("unchecked")
     @Override
     public <T> T getProperty(String key) {
-    	log.info("get property, dao {}", dao);
     	populate();
         return (T) properties_.get(key);
     }
@@ -36,7 +36,7 @@ public abstract class RdbmsElement implements Element {
     @Override
     public Set<String> getPropertyKeys() {
     	populate();
-    	return ImmutableSet.copyOf(properties_.keySet());
+        return Collections.unmodifiableSet(properties_.keySet());
     }
     // =================================
     // gonna be a lot of auto-boxing through this call...
@@ -50,11 +50,11 @@ public abstract class RdbmsElement implements Element {
     	Object v = properties_.get(key);
     	if (null != v)
     	    log.info("prop class {}", properties_.get(key).getClass().getName());
-    	if (Objects.equals(properties_.get(key), value)) {
-    		log.info("property already set, returning {}=>{}", key, value);
+    	if (Objects.equals(v, value)) {
+    		log.info("property already exists, returning {}=>{}", key, value);
     		return;
     	}
-        dao.set(Integer.valueOf(id), key, value);
+        dao.set(Long.valueOf(id), key, value);
         properties_.put(key, value);
     }
     // =================================
@@ -63,7 +63,7 @@ public abstract class RdbmsElement implements Element {
     public <T> T removeProperty(String key) {
     	populate();
     	if (properties_.containsKey(key)) {
-    	    dao.remove(Integer.valueOf(id), key);
+    	    dao.remove(id, key);
             return (T) properties_.remove(key);
     	}
     	return null;
@@ -74,9 +74,9 @@ public abstract class RdbmsElement implements Element {
     // =================================
     @Override
     public Object getId() {
-        return Integer.valueOf(this.id);
+        return this.id;
     }
-    protected int rawId() {
+    protected long rawId() {
         return this.id;
     }
     // =================================
@@ -91,21 +91,29 @@ public abstract class RdbmsElement implements Element {
     // =================================
     @Override
     public int hashCode() {
-        return this.id;
+        return (int)id;
     }
     // =================================
     private void populate() {
         // TODO: ain't thread-safe
     	if (populated_)
     		return;
-    	properties_ = newHashMap( dao.properties(Integer.valueOf(id)) );
+    	properties_ = newHashMap( dao.properties(Long.valueOf(id)) );
     	populated_ = true;
     }
     // =================================
     protected final RdbmsGraph graph;
     protected final PropertyDao dao;
-    protected final int id;
+    protected final long id;
     protected boolean populated_ = false;
     Map<String, Object> properties_ = newHashMap();
+    Map<PropKey, Object> qProperties_ = newHashMap();
+
+    @Data
+    @RequiredArgsConstructor(staticName = "of")
+    protected static final class PropKey {
+        final long id;
+        final String key;
+    }
 
 }

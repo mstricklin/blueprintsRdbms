@@ -303,6 +303,7 @@ public class MemGraph implements IndexableGraph, KeyIndexableGraph { // ,
             }
         }
         // =================================
+        @SuppressWarnings("unchecked")
         public void createKeyIndex(final String key) {
             this.keys_.add(key);
             // re-index

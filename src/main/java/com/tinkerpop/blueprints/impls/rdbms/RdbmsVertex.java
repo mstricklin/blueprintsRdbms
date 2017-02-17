@@ -2,16 +2,18 @@
 package com.tinkerpop.blueprints.impls.rdbms;
 
 import static com.google.common.collect.Iterables.concat;
+import static com.google.common.collect.Iterables.filter;
+import static com.google.common.collect.Iterables.transform;
+import static com.google.common.collect.Sets.newHashSet;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Set;
 
 
-import com.google.common.base.Predicates;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
+import com.google.common.base.Function;
+import com.google.common.base.Predicate;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
@@ -26,35 +28,53 @@ import lombok.extern.slf4j.Slf4j;
 public class RdbmsVertex extends RdbmsElement implements Vertex {
 
     // =================================
-    public RdbmsVertex(final int vertexID, final RdbmsGraph graph) {
+    public RdbmsVertex(final long vertexID, final RdbmsGraph graph) {
         super(vertexID, graph);
-        // TODO: populate edges
+        log.info("RdbmsVertex ctor");
+        for (RdbmsEdge e: graph.getEdges(vertexID)) {
+            if (vertexID == e.getOutVertex().rawId())
+                qOutEdges.add(e.rawId());
+            if (vertexID == e.getInVertex().rawId())
+                qInEdges.add(e.rawId());
+        }
     }
-
     // =================================
+    // Not so efficient, looking up one at a time...?
+    private Function<Long, Edge> lookupEdge = new Function<Long, Edge>() {
+        @Override
+        public Edge apply(Long id) {
+            return graph.getEdge(id);
+        }
+    };
     @Override
     public Iterable<Edge> getEdges(Direction direction, String... labels) {
         log.info("getEdges for {} {}", this, direction);
         if (direction.equals(Direction.OUT)) {
-            return getEdges(outEdges, Arrays.asList(labels));
+            return getEdges(qOutEdges, Arrays.asList(labels));
         } else if (direction.equals(Direction.IN)) {
-            return getEdges(inEdges, Arrays.asList(labels));
+            return getEdges(qInEdges, Arrays.asList(labels));
         } else {
-            return concat(getEdges(inEdges, Arrays.asList(labels)), getEdges(outEdges, Arrays.asList(labels)));
+            return concat(getEdges(qInEdges, Arrays.asList(labels)),
+                          getEdges(qOutEdges, Arrays.asList(labels)));
         }
     }
     // =================================
     // annoyingly, an empty label list is a special case for 'all'
-    private Iterable<Edge> getEdges(Multimap<String, Edge> edges, Collection<String> labels) {
+    private Iterable<Edge> getEdges(Iterable<Long> edgeIDs, final Collection<String> labels) {
+        Iterable<Edge> i = transform(edgeIDs, lookupEdge);
         if (labels.isEmpty())
-            return ImmutableList.copyOf(edges.values());
-        Multimap<String, Edge> m = Multimaps.filterKeys(edges, Predicates.in(labels));
-        return ImmutableList.copyOf(m.values());
+            return i;
+        return filter(i, new Predicate<Edge>() {
+            @Override
+            public boolean apply(Edge e) {
+                return labels.contains(e.getLabel());
+            }
+        });
     }
-
     // =================================
     @Override
     public Iterable<Vertex> getVertices(Direction direction, String... labels) {
+        // TODO: ???
         return new VerticesFromEdgesIterable(this, direction, labels);
     }
     // =================================
@@ -65,18 +85,15 @@ public class RdbmsVertex extends RdbmsElement implements Vertex {
     // =================================
     @Override
     public Edge addEdge(String label, Vertex vertex) {
-        // add to self list
         return getGraph().addEdge(null, this, vertex, label);
     }
-
     // =================================
-    protected void addOutEdge(String label, Edge e) {
-        outEdges.put(label, e);
+    void addOutEdge(Long edgeId) {
+        qOutEdges.add(edgeId);
     }
-
     // =================================
-    protected void addInEdge(String label, Edge e) {
-        inEdges.put(label, e);
+    void addInEdge(Long edgeId) {
+        qInEdges.add(edgeId);
     }
     // =================================
     @Override
@@ -84,10 +101,9 @@ public class RdbmsVertex extends RdbmsElement implements Vertex {
         getGraph().removeVertex(this);
     }
     // =================================
-    public void removeEdge(Edge edge) {
-        // is it in, or out? easier to remove from both...
-        outEdges.remove(edge.getLabel(), edge);
-        inEdges.remove(edge.getLabel(), edge);
+    void removeEdge(Long edgeId) {
+        qOutEdges.remove(edgeId);
+        qInEdges.remove(edgeId);
     }
     // =================================
     @Override
@@ -96,10 +112,8 @@ public class RdbmsVertex extends RdbmsElement implements Vertex {
     }
     // =================================
     // yay, type-erasure.
-    private static final Multimap<String, Edge> typedMultiMap() {
-        return ArrayListMultimap.create();
-    }
-    private Multimap<String, Edge> outEdges = Multimaps.synchronizedMultimap(typedMultiMap());
-    private Multimap<String, Edge> inEdges = Multimaps.synchronizedMultimap(typedMultiMap());
+    private static final Set<Long> typedSet() { return newHashSet(); };
+    private Set<Long> qOutEdges = Collections.synchronizedSet(typedSet());
+    private Set<Long> qInEdges  = Collections.synchronizedSet(typedSet());
 
 }

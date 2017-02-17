@@ -41,6 +41,7 @@ public class MemIndex <T extends Element> implements Index<T> {
         s.add(element);
     }
     // =================================
+    @SuppressWarnings("unchecked")
     @Override
     public CloseableIterable<T> get(String key, Object value) {
         return (index_.contains(key, value))
