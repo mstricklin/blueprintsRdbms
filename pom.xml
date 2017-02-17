@@ -13,6 +13,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <blueprints.version>2.4.0</blueprints.version>
+        <db.location>graph</db.location>
     </properties>
 
     <dependencies>

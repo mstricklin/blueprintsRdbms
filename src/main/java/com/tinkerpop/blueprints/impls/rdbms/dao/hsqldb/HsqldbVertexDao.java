@@ -34,6 +34,14 @@ public class HsqldbVertexDao implements VertexDao {
     };
     // =================================
     @Override
+    public void clear() {
+        String sql = "truncate table vertex restart identity and commit no check";
+        try (Connection con = sql2o.open()) {
+            con.createQuery(sql, "clear vertices").executeUpdate();
+        }
+    }
+    // =================================
+    @Override
     public RdbmsVertex add() {
         String sql = "insert into vertex values (null)";
 
@@ -53,7 +61,7 @@ public class HsqldbVertexDao implements VertexDao {
         String sql = "select * from vertex where id = :id";
 
         try (Connection con = sql2o.open()) {
-            RdbmsVertex v = con.createQuery(sql, "get vertex")
+            RdbmsVertex v = con.createQuery(sql, "get vertex "+id)
                                .addParameter("id", id)
                                .executeAndFetchFirst(makeVertex);
             log.info("returned vertex for {}: {}", id, v);

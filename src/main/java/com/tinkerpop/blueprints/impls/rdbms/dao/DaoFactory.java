@@ -13,6 +13,7 @@ import com.tinkerpop.blueprints.impls.rdbms.RdbmsVertex;
 
 public interface DaoFactory {
     interface VertexDao {
+        void clear();
         RdbmsVertex add();
         RdbmsVertex get(Object id);
         void remove(Object id);
@@ -21,6 +22,7 @@ public interface DaoFactory {
     }
     // =================================
     interface EdgeDao {
+        void clear();
         RdbmsEdge add(Vertex outVertex, Vertex inVertex, String label);
         RdbmsEdge get(Object id);
         void remove(Object id);
@@ -29,6 +31,7 @@ public interface DaoFactory {
     }
     // =================================
     interface PropertyDao {
+        void clear();
     	void set(Object id, String key, Object value);
     	<T> T get(Object id, String key);
     	void remove(Object id, String key);

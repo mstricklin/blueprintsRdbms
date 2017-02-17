@@ -8,6 +8,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.Map.Entry;
 
+import com.tinkerpop.blueprints.*;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationConverter;
 
@@ -17,17 +18,6 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.CacheLoader.InvalidCacheLoadException;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Element;
-import com.tinkerpop.blueprints.Features;
-import com.tinkerpop.blueprints.GraphQuery;
-import com.tinkerpop.blueprints.Index;
-import com.tinkerpop.blueprints.IndexableGraph;
-import com.tinkerpop.blueprints.KeyIndexableGraph;
-import com.tinkerpop.blueprints.MetaGraph;
-import com.tinkerpop.blueprints.Parameter;
-import com.tinkerpop.blueprints.TransactionalGraph;
-import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.impls.rdbms.dao.DaoFactory;
 import com.tinkerpop.blueprints.impls.rdbms.dao.hsqldb.HsqldbDaoFactory;
 import com.tinkerpop.blueprints.impls.rdbms.util.CovariantIterable;
@@ -129,6 +119,7 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
     public Vertex getVertex(final Object id) {
         checkNotNull(id);
         try {
+            log.error("Need to pull vertex from SoR!!!");
             return vertexCache.get(id);
         } catch (ExecutionException | InvalidCacheLoadException e) {
             log.error("could not find vertex w id {}", id);
@@ -141,6 +132,10 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
     public void removeVertex(Vertex vertex) {
         checkNotNull(vertex);
         synchronized (this) {
+            log.info("remove vertex {}", vertex);
+            for (Edge e: vertex.getEdges(Direction.BOTH)) {
+                log.info("edge to be removed {}", e);
+            }
             vertexCache.invalidate(vertex.getId());
             dao.getVertexDao().remove(vertex.getId());
         }
@@ -162,6 +157,7 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
     public Edge addEdge(Object id, Vertex outVertex, Vertex inVertex, String label) {
         RdbmsEdge e = dao.getEdgeDao().add(outVertex, inVertex, label);
         edgeCache.put(e.getId(), e);
+//        outVertex.addEdge(label, )
         return e;
     }
     // =================================
@@ -281,6 +277,12 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
         return this;
     }
 
+    public void clear() {
+        log.warn("clearing everything from graph...");
+        dao.getPropertyDao().clear();
+        dao.getEdgeDao().clear();
+        dao.getVertexDao().clear();
+    }
     // =================================
     private CacheLoader<Object, RdbmsVertex> vertexLoader = new CacheLoader<Object, RdbmsVertex>() {
         @Override

@@ -27,6 +27,14 @@ public class HsqldbPropertyDao implements PropertyDao {
         sql2o = new Sql2o(dataSource_);
         serializer = serializer_;
     }
+	// =================================
+	@Override
+	public void clear() {
+		String sql = "truncate table property restart identity and commit no check";
+		try (Connection con = sql2o.open()) {
+			con.createQuery(sql, "clear properties").executeUpdate();
+		}
+	}
     // =================================
 	@Override
 	public void set(Object id, String key, Object value) {
@@ -103,7 +111,6 @@ public class HsqldbPropertyDao implements PropertyDao {
             // TODO: Need to deserialize...
             ImmutableMap<String, Object> entryMap = ImmutableMap.copyOf( entryList );
             log.info("props: {}", entryMap);
-//            return m;
             return entryMap;
         }
 	}

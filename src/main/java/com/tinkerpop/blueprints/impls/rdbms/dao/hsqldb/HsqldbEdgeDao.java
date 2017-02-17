@@ -33,6 +33,7 @@ public class HsqldbEdgeDao implements EdgeDao {
         @Override
         public RdbmsEdge handle(ResultSet rs) throws SQLException {
             // TODO: think about coherence here...
+            log.error("making new vertices, not pulling canonical");
             Vertex in = new RdbmsVertex(rs.getInt(2), graph);
             Vertex out = new RdbmsVertex(rs.getInt(3), graph);
             String label = rs.getString(4);
@@ -40,13 +41,24 @@ public class HsqldbEdgeDao implements EdgeDao {
         }
     };
     // =================================
+    @Override
+    public void clear() {
+        String sql = "truncate table edge restart identity and commit no check";
+        try (Connection con = sql2o.open()) {
+            con.createQuery(sql, "clear edges").executeUpdate();
+        }
+    }
+    // =================================
     // TODO
     @Override
     public RdbmsEdge add(Vertex outVertex, Vertex inVertex, String label) {
-        String sql = "insert into edge values (null)";
+        String sql = "insert into edge (out_vertex_id, in_vertex_id, label) values (:outID, :inID, :label)";
 
         try (Connection con = sql2o.open()) {
-            Integer genID = con.createQuery(sql, true)
+            Integer genID = con.createQuery(sql, "add edge", true)
+                               .addParameter("outID", outVertex.getId())
+                               .addParameter("inID", inVertex.getId())
+                               .addParameter("label", label)
                                .executeUpdate()
                                .getKey(Integer.class);
             log.info("generated edge id returned {}", genID);
@@ -61,7 +73,7 @@ public class HsqldbEdgeDao implements EdgeDao {
         String sql = "select * from edge where id = :id";
 
         try (Connection con = sql2o.open()) {
-            RdbmsEdge e = con.createQuery(sql)
+            RdbmsEdge e = con.createQuery(sql, "get edge "+id)
                                .addParameter("id", id)
                                .executeAndFetchFirst(makeEdge);
             log.info("returned edge for {}: {}", id, e);
@@ -76,8 +88,8 @@ public class HsqldbEdgeDao implements EdgeDao {
 
         try (org.sql2o.Connection con = sql2o.open()) {
             log.info("remove edge w id {}", id);
-            con.createQuery(sql0) .addParameter("id", id) .executeUpdate();
-            con.createQuery(sql1) .addParameter("id", id) .executeUpdate();
+            con.createQuery(sql0, "remove edge "+id) .addParameter("id", id) .executeUpdate();
+            con.createQuery(sql1, "remove properties for "+id) .addParameter("id", id) .executeUpdate();
         }
     }
     // =================================
@@ -89,7 +101,7 @@ public class HsqldbEdgeDao implements EdgeDao {
 
         try (org.sql2o.Connection con = sql2o.open()) {
             log.info("request all edges");
-            return con.createQuery(sql)
+            return con.createQuery(sql, "get all edges")
                       .executeAndFetch(makeEdge);
         }
     }

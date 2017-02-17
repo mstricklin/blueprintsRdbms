@@ -14,7 +14,6 @@ import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.impls.rdbms.dao.DaoFactory.PropertyDao;
 import com.tinkerpop.blueprints.util.ElementHelper;
 
-import groovy.lang.Immutable;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

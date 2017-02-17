@@ -34,6 +34,7 @@ public class RdbmsVertex extends RdbmsElement implements Vertex {
     // =================================
     @Override
     public Iterable<Edge> getEdges(Direction direction, String... labels) {
+        log.info("getEdges for {} {}", this, direction);
         if (direction.equals(Direction.OUT)) {
             return getEdges(outEdges, Arrays.asList(labels));
         } else if (direction.equals(Direction.IN)) {
