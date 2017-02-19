@@ -51,7 +51,7 @@ public class HsqldbDaoFactory implements DaoFactory {
     // =================================
     @Override
     public VertexDao getVertexDao() {
-        return new HsqldbVertexDao(ds, graph);
+        return new HsqldbVertexDao(ds, graph, serializer);
     }
     // =================================
     @Override
@@ -61,7 +61,7 @@ public class HsqldbDaoFactory implements DaoFactory {
     // =================================
     @Override
     public PropertyDao getPropertyDao() {
-    	return new HsqldbPropertyDao(ds, graph, serializer);
+    	return new HsqldbPropertyDao(ds, serializer);
     }
     // =================================
     private final ConnectionPoolManager cpm;

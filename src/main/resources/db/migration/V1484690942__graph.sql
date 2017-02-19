@@ -20,6 +20,7 @@ create table edge (
 --  create index out_vertex_id_idx on edge (out_vertex_id);
 
 create table property (
+    --element_type  character(1),
     element_id    integer,
     key           varchar(255),
     value         varchar(255)

@@ -219,6 +219,27 @@ public class RdbmsTest extends GraphTest {
         e = newArrayList( vB.getEdges(Direction.OUT, "edge0") );
         assertTrue(e.isEmpty());
     }
+    // =================================
+    @Test
+    public void testVertexByProperties() throws Exception {
+        Vertex vA = graph_.addVertex(null);
+        Vertex vB = graph_.addVertex(null);
+        vA.setProperty("String", "aaa");
+        vB.setProperty("String", "bbb");
+        for (Vertex v: graph_.getVertices()) {
+            log.info(v.toString());
+            for (String k: v.getPropertyKeys())
+                log.info("\t{} => {}", k, v.getProperty(k));
+        }
+        log.info("=====");
+        for (Vertex v: graph_.getVertices("String", "aaa")) {
+            log.info(v.toString());
+            for (String k: v.getPropertyKeys())
+                log.info("\t{} => {}", k, v.getProperty(k));
+        }
+        log.info("=====");
+        assertTrue(true);
+    }
 
     // X add vertex
     // X get vertex
@@ -238,6 +259,7 @@ public class RdbmsTest extends GraphTest {
     // X iterate edges
     // iterate vertices by property
     // iterate edges by property
+
     // test persistence !!!
     // transactions
     @Test

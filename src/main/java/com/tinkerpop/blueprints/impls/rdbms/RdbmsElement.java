@@ -3,10 +3,7 @@ package com.tinkerpop.blueprints.impls.rdbms;
 
 import static com.google.common.collect.Maps.newHashMap;
 
-import java.util.Collections;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Graph;
@@ -29,14 +26,14 @@ public abstract class RdbmsElement implements Element {
     @SuppressWarnings("unchecked")
     @Override
     public <T> T getProperty(String key) {
-    	populate();
-        return (T) properties_.get(key);
+        Map<String,Object> p = graph.getProperties(id);
+        return (T) p.get(key);
     }
     // =================================
     @Override
     public Set<String> getPropertyKeys() {
-    	populate();
-        return Collections.unmodifiableSet(properties_.keySet());
+        Map<String,Object> p = graph.getProperties(id);
+        return Collections.unmodifiableSet(p.keySet());
     }
     // =================================
     // gonna be a lot of auto-boxing through this call...
@@ -44,27 +41,27 @@ public abstract class RdbmsElement implements Element {
     public void setProperty(String key, Object value) {
         ElementHelper.validateProperty(this, key, value);
 
-        populate();
+        Map<String,Object> p = graph.getProperties(id);
 
         log.info("set prop for id {}: {}=>{}", id, key, value);
-    	Object v = properties_.get(key);
+    	Object v = p.get(key);
     	if (null != v)
-    	    log.info("prop class {}", properties_.get(key).getClass().getName());
+    	    log.info("prop class {}", p.get(key).getClass().getName());
     	if (Objects.equals(v, value)) {
     		log.info("property already exists, returning {}=>{}", key, value);
     		return;
     	}
-        dao.set(Long.valueOf(id), key, value);
-        properties_.put(key, value);
+        dao.set(id, key, value);
+        p.put(key, value);
     }
     // =================================
     @SuppressWarnings("unchecked")
     @Override
     public <T> T removeProperty(String key) {
-    	populate();
-    	if (properties_.containsKey(key)) {
+        Map<String,Object> p = graph.getProperties(id);
+    	if (p.containsKey(key)) {
     	    dao.remove(id, key);
-            return (T) properties_.remove(key);
+            return (T) p.remove(key);
     	}
     	return null;
     }
@@ -94,26 +91,21 @@ public abstract class RdbmsElement implements Element {
         return (int)id;
     }
     // =================================
-    private void populate() {
-        // TODO: ain't thread-safe
-    	if (populated_)
-    		return;
-    	properties_ = newHashMap( dao.properties(Long.valueOf(id)) );
-    	populated_ = true;
-    }
-    // =================================
     protected final RdbmsGraph graph;
     protected final PropertyDao dao;
     protected final long id;
-    protected boolean populated_ = false;
-    Map<String, Object> properties_ = newHashMap();
-    Map<PropKey, Object> qProperties_ = newHashMap();
-
-    @Data
+    // =================================
     @RequiredArgsConstructor(staticName = "of")
-    protected static final class PropKey {
-        final long id;
-        final String key;
+    @Data
+    public static final class PropertyDTO {
+        public final String key;
+        public final Object value;
+        public static Map<String, Object> toMap(Collection<PropertyDTO> c) {
+            Map<String, Object> m = newHashMap();
+            for (PropertyDTO p: c)
+                m.put(p.key, p.value);
+            return m;
+        }
     }
 
 }

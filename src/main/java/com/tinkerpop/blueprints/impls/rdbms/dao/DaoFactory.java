@@ -2,9 +2,10 @@
 package com.tinkerpop.blueprints.impls.rdbms.dao;
 
 
+import java.util.List;
 import java.util.Map;
 
-import com.google.common.collect.ImmutableMap;
+import com.tinkerpop.blueprints.impls.rdbms.RdbmsElement;
 import com.tinkerpop.blueprints.impls.rdbms.RdbmsEdge;
 import com.tinkerpop.blueprints.impls.rdbms.RdbmsVertex;
 
@@ -33,7 +34,7 @@ public interface DaoFactory {
     	void set(long id, String key, Object value);
     	<T> T get(long id, String key);
     	void remove(long id, String key);
-    	ImmutableMap<String, Object> properties(long id);
+    	List<RdbmsElement.PropertyDTO> properties(long id);
     }
     // =================================
     interface SerializerDao {

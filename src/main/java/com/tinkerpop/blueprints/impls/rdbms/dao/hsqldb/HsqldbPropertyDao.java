@@ -2,19 +2,13 @@ package com.tinkerpop.blueprints.impls.rdbms.dao.hsqldb;
 
 
 import java.util.List;
-import java.util.Map;
-import java.util.AbstractMap.SimpleImmutableEntry;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 
 import javax.sql.DataSource;
 
+import com.tinkerpop.blueprints.impls.rdbms.RdbmsElement;
 import org.sql2o.Connection;
-import org.sql2o.ResultSetHandler;
 import org.sql2o.Sql2o;
 
-import com.google.common.collect.ImmutableMap;
-import com.tinkerpop.blueprints.impls.rdbms.RdbmsGraph;
 import com.tinkerpop.blueprints.impls.rdbms.dao.DaoFactory.PropertyDao;
 import com.tinkerpop.blueprints.impls.rdbms.dao.Serializer;
 
@@ -23,7 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class HsqldbPropertyDao implements PropertyDao {
 
-	HsqldbPropertyDao(DataSource dataSource_, RdbmsGraph graph_, Serializer serializer_) {
+	HsqldbPropertyDao(DataSource dataSource_, Serializer serializer_) {
         sql2o = new Sql2o(dataSource_);
         serializer = serializer_;
     }
@@ -89,29 +83,18 @@ public class HsqldbPropertyDao implements PropertyDao {
 
         }
 	}
-	// =================================
-    private final ResultSetHandler<Map.Entry<String, Object>> makeProperty
-            = new ResultSetHandler<Map.Entry<String, Object>>() {
-        @Override
-        public Map.Entry<String, Object> handle(ResultSet rs) throws SQLException {
-            Object o = serializer.deserialize(rs.getString(2));
-            return new SimpleImmutableEntry<String, Object>(rs.getString(1), o);
-        }
-    };
+
 	// =================================
 	@Override
-	public ImmutableMap<String, Object> properties(long id) {
+	public List<RdbmsElement.PropertyDTO> properties(long id) {
         String sql = "select key, value from property " +
 	                 "where element_id = :id";
 
         try (Connection con = sql2o.open()) {
         	log.info("get all properties for {}", id);
-            List<Map.Entry<String, Object>> entryList = con.createQuery(sql, "get all properties "+id)
+            return con.createQuery(sql, "get all properties "+id)
             		              .addParameter("id", id)
-                                  .executeAndFetch(makeProperty);
-            ImmutableMap<String, Object> entryMap = ImmutableMap.copyOf( entryList );
-            log.info("props: {}", entryMap);
-            return entryMap;
+                                  .executeAndFetch(RdbmsElement.PropertyDTO.class);
         }
 	}
 	// =================================

@@ -69,6 +69,7 @@ public class HsqldbEdgeDao implements EdgeDao {
     @Override
     public RdbmsEdge get(long id) {
         // TODO: this can be heavily optimized...any time one does a 'getProperty' on each
+        // TODO: list columns explicitly
         // edge in turn, it adds another round-trip to the DB
         String sql = "select * from edge where id = :id";
 

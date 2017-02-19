@@ -6,6 +6,7 @@ import java.sql.SQLException;
 
 import javax.sql.DataSource;
 
+import com.tinkerpop.blueprints.impls.rdbms.dao.Serializer;
 import org.sql2o.Connection;
 import org.sql2o.ResultSetHandler;
 import org.sql2o.Sql2o;
@@ -20,10 +21,10 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class HsqldbVertexDao implements VertexDao {
 
-    HsqldbVertexDao(DataSource dataSource, RdbmsGraph graph) {
-        ds = dataSource;
+    HsqldbVertexDao(DataSource dataSource, RdbmsGraph graph, Serializer serializer_) {
         this.graph = graph;
         sql2o = new Sql2o(dataSource);
+        serializer = serializer_;
     }
     // =================================
     private ResultSetHandler<RdbmsVertex> makeVertex = new ResultSetHandler<RdbmsVertex>() {
@@ -97,21 +98,19 @@ public class HsqldbVertexDao implements VertexDao {
     // =================================
     @Override
     public Iterable<RdbmsVertex> list(String key, Object value) {
-        // TODO: this can be heavily optimized...any time one does a 'getProperty' on each
-        // vertex in turn, it adds another round-trip to the DB
-        // TODO: how to we serialize properties?
         String sql = "select distinct element_id from property where key = :key and value = :value";
 
+        String serializedValue = serializer.serialize(value);
         try (Connection con = sql2o.open()) {
             return con.createQuery(sql, "filtered vertices")
                     .addParameter("key", key)
-                    .addParameter("value", value)
+                    .addParameter("value", serializedValue)
                     .addColumnMapping("element_id", "id")
                     .executeAndFetch(makeVertex);
         }
     }
     // =================================
-    private final DataSource ds;
     private final RdbmsGraph graph;
     private final Sql2o sql2o;
+    private final Serializer serializer;
 }
