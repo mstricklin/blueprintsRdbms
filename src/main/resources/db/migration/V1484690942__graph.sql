@@ -16,15 +16,23 @@ create table edge (
     foreign key (out_vertex_id) references vertex(id)
 );
 
---  create index in_vertex_id_idx  on edge (in_vertex_id);
---  create index out_vertex_id_idx on edge (out_vertex_id);
+create index edge_in_vertex_id_idx  on edge (in_vertex_id);
+create index edge_out_vertex_id_idx on edge (out_vertex_id);
 
-create table property (
-    --element_type  character(1),
-    element_id    integer,
+create table vertex_property (
+    vertex_id     integer,
     key           varchar(255),
     value         varchar(255)
 );
 
-create index property_element_id_idx  on property (element_id);
-create index property_key_idx         on property (key);
+create index vertex_property_id_idx     on vertex_property (vertex_id);
+create index vertex_property_key_idx    on vertex_property (key);
+
+create table edge_property (
+    edge_id       integer,
+    key           varchar(255),
+    value         varchar(255)
+);
+
+create index edge_property_id_idx     on edge_property (edge_id);
+create index edge_property_key_idx    on edge_property (key);

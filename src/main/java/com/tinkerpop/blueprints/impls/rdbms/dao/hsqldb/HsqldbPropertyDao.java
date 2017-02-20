@@ -23,14 +23,6 @@ public class HsqldbPropertyDao implements PropertyDao {
     }
 	// =================================
 	@Override
-	public void clear() {
-		String sql = "truncate table property restart identity and commit no check";
-		try (Connection con = sql2o.open()) {
-			con.createQuery(sql, "clear properties").executeUpdate();
-		}
-	}
-    // =================================
-	@Override
 	public void set(long id, String key, Object value) {
 	    // TODO: clean up serialization
 	    String serializedValue = serializer.serialize(value);

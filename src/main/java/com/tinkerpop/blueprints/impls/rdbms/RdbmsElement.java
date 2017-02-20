@@ -23,49 +23,6 @@ public abstract class RdbmsElement implements Element {
         dao = graph.getDaoFactory().getPropertyDao();
     }
     // =================================
-    @SuppressWarnings("unchecked")
-    @Override
-    public <T> T getProperty(String key) {
-        Map<String,Object> p = graph.getProperties(id);
-        return (T) p.get(key);
-    }
-    // =================================
-    @Override
-    public Set<String> getPropertyKeys() {
-        Map<String,Object> p = graph.getProperties(id);
-        return Collections.unmodifiableSet(p.keySet());
-    }
-    // =================================
-    // gonna be a lot of auto-boxing through this call...
-    @Override
-    public void setProperty(String key, Object value) {
-        ElementHelper.validateProperty(this, key, value);
-
-        Map<String,Object> p = graph.getProperties(id);
-
-        log.info("set prop for id {}: {}=>{}", id, key, value);
-    	Object v = p.get(key);
-    	if (null != v)
-    	    log.info("prop class {}", p.get(key).getClass().getName());
-    	if (Objects.equals(v, value)) {
-    		log.info("property already exists, returning {}=>{}", key, value);
-    		return;
-    	}
-        dao.set(id, key, value);
-        p.put(key, value);
-    }
-    // =================================
-    @SuppressWarnings("unchecked")
-    @Override
-    public <T> T removeProperty(String key) {
-        Map<String,Object> p = graph.getProperties(id);
-    	if (p.containsKey(key)) {
-    	    dao.remove(id, key);
-            return (T) p.remove(key);
-    	}
-    	return null;
-    }
-    // =================================
     @Override
     public abstract void remove();
     // =================================
@@ -82,7 +39,7 @@ public abstract class RdbmsElement implements Element {
         return ElementHelper.areEqual(this, object);
     }
     // =================================
-    protected Graph getGraph() {
+    protected RdbmsGraph getGraph() {
         return graph;
     }
     // =================================

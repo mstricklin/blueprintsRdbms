@@ -35,14 +35,6 @@ public class HsqldbVertexDao implements VertexDao {
     };
     // =================================
     @Override
-    public void clear() {
-        String sql = "truncate table vertex restart identity and commit no check";
-        try (Connection con = sql2o.open()) {
-            con.createQuery(sql, "clear vertices").executeUpdate();
-        }
-    }
-    // =================================
-    @Override
     public RdbmsVertex add() {
         String sql = "insert into vertex values (null)";
 

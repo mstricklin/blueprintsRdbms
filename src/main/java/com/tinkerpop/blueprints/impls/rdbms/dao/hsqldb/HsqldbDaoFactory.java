@@ -15,6 +15,8 @@ import com.tinkerpop.blueprints.impls.rdbms.dao.KryoSerializer;
 import com.tinkerpop.blueprints.impls.rdbms.dao.Serializer;
 
 import lombok.extern.slf4j.Slf4j;
+import org.sql2o.Connection;
+import org.sql2o.Sql2o;
 
 @Slf4j
 public class HsqldbDaoFactory implements DaoFactory {
@@ -35,6 +37,14 @@ public class HsqldbDaoFactory implements DaoFactory {
         ds = cpm.getDataSource();
         SerializerDao sd = new HsqldbKryoDao(ds);
         serializer = new KryoSerializer(sd);
+    }
+    // =================================
+    private static String clearSQL = "TRUNCATE SCHEMA public AND COMMIT";
+    public void clear() {
+        log.warn("clearing database");
+        try (Connection con = new Sql2o(ds).open()) {
+            con.createQuery(clearSQL, "wipe database").executeUpdate();
+        }
     }
     // =================================
     @Override

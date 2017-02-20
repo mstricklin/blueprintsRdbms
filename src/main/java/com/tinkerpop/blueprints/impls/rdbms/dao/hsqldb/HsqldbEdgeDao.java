@@ -41,14 +41,6 @@ public class HsqldbEdgeDao implements EdgeDao {
         }
     };
     // =================================
-    @Override
-    public void clear() {
-        String sql = "truncate table edge restart identity and commit no check";
-        try (Connection con = sql2o.open()) {
-            con.createQuery(sql, "clear edges").executeUpdate();
-        }
-    }
-    // =================================
     // TODO
     @Override
     public RdbmsEdge add(long outVertexID, long inVertexID, final String label) {
