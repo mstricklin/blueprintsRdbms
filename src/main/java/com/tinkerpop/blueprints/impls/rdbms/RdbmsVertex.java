@@ -29,7 +29,9 @@ public class RdbmsVertex extends RdbmsElement implements Vertex {
     // =================================
     public RdbmsVertex(final long vertexID, final RdbmsGraph graph) {
         super(vertexID, graph);
+        vertexId = ElementId.of(vertexID, PropertyType.VERTEX);
         log.info("RdbmsVertex ctor");
+
         dao = graph.getDaoFactory().getVertexDao();
         for (RdbmsEdge e: graph.getEdges(vertexID)) {
             if (vertexID == e.getOutVertex().rawId())
@@ -111,13 +113,13 @@ public class RdbmsVertex extends RdbmsElement implements Vertex {
     @SuppressWarnings("unchecked")
     @Override
     public <T> T getProperty(String key) {
-        Map<String,Object> p = getGraph().getProperties(id);
+        Map<String,Object> p = getGraph().getProperties(vertexId);
         return (T) p.get(key);
     }
     // =================================
     @Override
     public Set<String> getPropertyKeys() {
-        Map<String,Object> p = getGraph().getProperties(id);
+        Map<String,Object> p = getGraph().getProperties(vertexId);
         return Collections.unmodifiableSet(p.keySet());
     }
     // =================================
@@ -126,7 +128,7 @@ public class RdbmsVertex extends RdbmsElement implements Vertex {
     public void setProperty(String key, Object value) {
         ElementHelper.validateProperty(this, key, value);
 
-        Map<String,Object> p = getGraph().getProperties(id);
+        Map<String,Object> p = getGraph().getProperties(vertexId);
 
         log.info("set prop for id {}: {}=>{}", id, key, value);
         Object v = p.get(key);
@@ -136,16 +138,16 @@ public class RdbmsVertex extends RdbmsElement implements Vertex {
             log.info("property already exists, returning {}=>{}", key, value);
             return;
         }
-        dao.set(id, key, value);
+        dao.setProperty(id, key, value);
         p.put(key, value);
     }
     // =================================
     @SuppressWarnings("unchecked")
     @Override
     public <T> T removeProperty(String key) {
-        Map<String,Object> p = getGraph().getProperties(id);
+        Map<String,Object> p = getGraph().getProperties(vertexId);
         if (p.containsKey(key)) {
-            dao.remove(id, key);
+            dao.removeProperty(id, key);
             return (T) p.remove(key);
         }
         return null;
@@ -157,6 +159,7 @@ public class RdbmsVertex extends RdbmsElement implements Vertex {
     }
     // =================================
     protected final DaoFactory.VertexDao dao;
+    protected final ElementId vertexId;
     // yay, type-erasure.
     private static final Set<Long> typedSet() { return newHashSet(); };
     private Set<Long> qOutEdges = Collections.synchronizedSet(typedSet());

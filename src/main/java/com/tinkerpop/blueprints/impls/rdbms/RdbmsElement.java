@@ -11,12 +11,31 @@ import com.tinkerpop.blueprints.impls.rdbms.dao.DaoFactory.PropertyDao;
 import com.tinkerpop.blueprints.util.ElementHelper;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public abstract class RdbmsElement implements Element {
+    public enum PropertyType {
+        VERTEX("V"),
+        EDGE("E");
 
+        PropertyType(final String s) { string = s; }
+        @Override
+        public String toString() { return string; }
+        private final String string;
+    }
+    // =================================
+    @RequiredArgsConstructor(staticName = "of")
+    @ToString
+    @EqualsAndHashCode
+    public final class ElementId {
+        public final Long id;
+        public final PropertyType type;
+    }
+    // =================================
     RdbmsElement(final long id_, final RdbmsGraph graph_) {
         id = id_;
         graph = graph_;

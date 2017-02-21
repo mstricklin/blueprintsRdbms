@@ -3,9 +3,12 @@ package com.tinkerpop.blueprints.impls.rdbms.dao.hsqldb;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
 
 import javax.sql.DataSource;
 
+import com.tinkerpop.blueprints.impls.rdbms.RdbmsElement;
+import com.tinkerpop.blueprints.impls.rdbms.dao.DaoFactory;
 import com.tinkerpop.blueprints.impls.rdbms.dao.Serializer;
 import org.sql2o.Connection;
 import org.sql2o.ResultSetHandler;
@@ -19,12 +22,14 @@ import com.tinkerpop.blueprints.impls.rdbms.dao.DaoFactory.VertexDao;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class HsqldbVertexDao implements VertexDao {
+public class HsqldbVertexDao {
 
     HsqldbVertexDao(DataSource dataSource, RdbmsGraph graph, Serializer serializer_) {
         this.graph = graph;
         sql2o = new Sql2o(dataSource);
         serializer = serializer_;
+//        propertyDao = new HsqldbPropertyDaoHelper(RdbmsElement.PropertyType.VERTEX,
+//                dataSource, serializer_);
     }
     // =================================
     private ResultSetHandler<RdbmsVertex> makeVertex = new ResultSetHandler<RdbmsVertex>() {

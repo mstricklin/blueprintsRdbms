@@ -10,6 +10,14 @@ import com.tinkerpop.blueprints.impls.rdbms.RdbmsEdge;
 import com.tinkerpop.blueprints.impls.rdbms.RdbmsVertex;
 
 public interface DaoFactory {
+    // =================================
+    interface PropertyDao {
+        void setProperty(RdbmsElement.ElementId id, String key, Object value);
+        <T> T getProperty(RdbmsElement.ElementId id, String key);
+        void removeProperty(RdbmsElement.ElementId id, String key);
+        List<RdbmsElement.PropertyDTO> properties(RdbmsElement.ElementId id);
+    }
+    // =================================
     interface VertexDao {
         RdbmsVertex add();
         RdbmsVertex get(long id);
@@ -25,13 +33,6 @@ public interface DaoFactory {
         Iterable<RdbmsEdge> list();
         Iterable<RdbmsEdge> list(String key, Object value);
         Iterable<RdbmsEdge> list(Long vertexId);
-    }
-    // =================================
-    interface PropertyDao {
-    	void set(long id, String key, Object value);
-    	<T> T get(long id, String key);
-    	void remove(long id, String key);
-    	List<RdbmsElement.PropertyDTO> properties(long id);
     }
     // =================================
     interface SerializerDao {

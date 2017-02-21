@@ -36,3 +36,14 @@ create table edge_property (
 
 create index edge_property_id_idx     on edge_property (edge_id);
 create index edge_property_key_idx    on edge_property (key);
+
+-- types are 'V' or 'E' for vertex or edge, respectively
+create table property (
+    element_id    integer,
+    type          character(1) check (type in ('V', 'E')),
+    key           varchar(255),
+    value         varchar(255)
+);
+
+create index property_id_idx     on property (element_id, type);
+create index property_key_idx    on property (key);

@@ -94,7 +94,7 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
         propertyCache = CacheBuilder.newBuilder()
                 .concurrencyLevel(4)
                 .maximumSize(cacheSize)
-                .build(barLoader);
+                .build(propertyLoader);
 
         dao = HsqldbDaoFactory.make(ConfigurationConverter.getProperties(configuration.subset(HIKARI_PREFIX)), this);
     }
@@ -240,7 +240,7 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
         edgeCache.invalidate(longId);
     }
     // =================================
-    Map<String, Object> getProperties(long id) {
+    Map<String, Object> getProperties(RdbmsElement.ElementId id) {
         try {
             return propertyCache.get(id);
         } catch (ExecutionException | InvalidCacheLoadException e) {
@@ -328,11 +328,10 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
     // =================================
     public void clear() {
         log.info("clearing everything from graph...");
-        dao.getPropertyDao().clear();
-        dao.getEdgeDao().clear();
-        dao.getVertexDao().clear();
+        dao.clear();
         edgeCache.invalidateAll();
         vertexCache.invalidateAll();
+        propertyCache.invalidateAll();
     }
     // =================================
     private RdbmsVertex cache(RdbmsVertex v) {
@@ -363,11 +362,11 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
             return dao.getEdgeDao().get(id);
         }
     };
-    private CacheLoader<Long, Map<String, Object>> barLoader = new CacheLoader<Long, Map<String, Object>>() {
+    private CacheLoader<RdbmsElement.ElementId, Map<String, Object>> propertyLoader = new CacheLoader<RdbmsElement.ElementId, Map<String, Object>>() {
         @Override
-        public Map<String, Object> load(Long id) throws Exception {
-            log.info("using cacheLoader for property {}", id);
-            return RdbmsElement.PropertyDTO.toMap( dao.getPropertyDao().properties(id) );
+        public Map<String, Object> load(RdbmsElement.ElementId key) throws Exception {
+            log.info("using cacheLoader for property {}", key);
+            return RdbmsElement.PropertyDTO.toMap( dao.getPropertyDao().properties(key) );
         }
     };
     // =================================
@@ -376,8 +375,8 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
     private final LoadingCache<Long, RdbmsVertex> vertexCache;
     private final LoadingCache<Long, RdbmsEdge> edgeCache;
 
-    // Unique key is id+string, contained in PropKey
-    private final LoadingCache<Long, Map<String, Object>> propertyCache;
+    // Unique key is id+type, contained in PropKey
+    private final LoadingCache<RdbmsElement.ElementId, Map<String, Object>> propertyCache;
 
 
 }
