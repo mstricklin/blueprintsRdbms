@@ -328,9 +328,7 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
     // =================================
     public void clear() {
         log.info("clearing everything from graph...");
-        dao.getPropertyDao().clear();
-        dao.getEdgeDao().clear();
-        dao.getVertexDao().clear();
+        dao.clear();
         edgeCache.invalidateAll();
         vertexCache.invalidateAll();
     }
