@@ -8,6 +8,7 @@ import java.util.Properties;
 import javax.sql.DataSource;
 
 import com.tinkerpop.blueprints.impls.rdbms.ConnectionPoolManager;
+import com.tinkerpop.blueprints.impls.rdbms.RdbmsElement;
 import com.tinkerpop.blueprints.impls.rdbms.RdbmsGraph;
 import com.tinkerpop.blueprints.impls.rdbms.SchemaVersionManager;
 import com.tinkerpop.blueprints.impls.rdbms.dao.DaoFactory;
@@ -39,12 +40,11 @@ public class HsqldbDaoFactory implements DaoFactory {
         serializer = new KryoSerializer(sd);
     }
     // =================================
-    private static String clearSQL = "TRUNCATE SCHEMA public AND COMMIT";
     public void clear() {
         log.warn("clearing database");
-        try (Connection con = new Sql2o(ds).open()) {
-            con.createQuery(clearSQL, "wipe database").executeUpdate();
-        }
+        getVertexDao().clear();
+        getEdgeDao().clear();
+        HsqldbPropertyDao.clear(ds);
     }
     // =================================
     @Override
@@ -70,8 +70,8 @@ public class HsqldbDaoFactory implements DaoFactory {
     }
     // =================================
     @Override
-    public PropertyDao getPropertyDao() {
-    	return new HsqldbPropertyDao(ds, serializer);
+    public PropertyDao getPropertyDao(RdbmsElement.PropertyType type) {
+        return new HsqldbPropertyDao(type, ds, serializer);
     }
     // =================================
     private final ConnectionPoolManager cpm;

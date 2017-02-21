@@ -1,59 +1,63 @@
 package com.tinkerpop.blueprints.impls.rdbms;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
-import com.tinkerpop.blueprints.util.ElementHelper;
+import com.google.common.cache.*;
+import com.google.common.cache.CacheLoader.InvalidCacheLoadException;
+import com.tinkerpop.blueprints.impls.rdbms.dao.DaoFactory;
+import com.tinkerpop.blueprints.util.ExceptionFactory;
+import com.tinkerpop.blueprints.util.StringFactory;
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Collections;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.ExecutionException;
 
 import static com.google.common.collect.Maps.newHashMap;
 
 @Slf4j
+@RequiredArgsConstructor(staticName = "of")
 public class PropertyStore {
-    public static enum ElementType {
-        VERTEX("V"),
-        EDGE("E");
 
-        ElementType(final String s_) { s=s_; }
-        @Override
-        public String toString() { return s; }
-        public final String s;
+    // =================================
+    static PropertyStore vertexPropertyStore(DaoFactory.PropertyDao dao_) {
+        return new PropertyStore(RdbmsElement.PropertyType.VERTEX, dao_);
     }
-
-    PropertyStore(ElementType type_) {
+    static PropertyStore edgePropertyStore(DaoFactory.PropertyDao dao_) {
+        return new PropertyStore(RdbmsElement.PropertyType.EDGE, dao_);
+    }
+    // =================================
+    private PropertyStore(RdbmsElement.PropertyType type_, DaoFactory.PropertyDao dao_) {
         type = type_;
+        dao = dao_;
 
         propertyCache = CacheBuilder.newBuilder()
                 .concurrencyLevel(4)
                 .maximumSize(20000)  //TODO: parameterize
+                .removalListener(removalListener)
                 .build(propertyLoader);
-        // get DAO based on type
     }
     // =================================
     @SuppressWarnings("unchecked")
-    @Override
-    public <T> T getProperty(String key) {
-        Map<String,Object> p = getGraph().getProperties(id);
-        return (T) p.get(key);
+    <T> T getProperty(Long id, String key) {
+        try {
+            return (T) propertyCache.get(id).get(key);
+        } catch (ExecutionException | InvalidCacheLoadException e) {
+            log.error("could not find properties w id {}", id);
+        }
+        return null;
     }
     // =================================
-    @Override
-    public Set<String> getPropertyKeys() {
-        Map<String,Object> p = getGraph().getProperties(id);
-        return Collections.unmodifiableSet(p.keySet());
+    Set<String> getPropertyKeys(Long id) {
+        return Collections.unmodifiableSet( getProperties(id).keySet() );
     }
     // =================================
     // gonna be a lot of auto-boxing through this call...
-    @Override
-    public void setProperty(String key, Object value) {
-        ElementHelper.validateProperty(this, key, value);
+    void setProperty(Long id, String key, Object value) {
+        // TODO: can key be null?
+        // TODO: can value be null?
+        validateProperty(key, value);
 
-        Map<String,Object> p = getGraph().getProperties(id);
+        Map<String, Object> p = getProperties(id);
 
         log.info("set prop for id {}: {}=>{}", id, key, value);
         Object v = p.get(key);
@@ -63,24 +67,81 @@ public class PropertyStore {
             log.info("property already exists, returning {}=>{}", key, value);
             return;
         }
-        dao.set(id, key, value);
+        dao.setProperty(id, key, value);
         p.put(key, value);
     }
     // =================================
-    @SuppressWarnings("unchecked")
-    @Override
-    public <T> T removeProperty(String key) {
+    Map<String, Object> getProperties(Long id) {
+        try {
+            return propertyCache.get(id);
+        } catch (ExecutionException | InvalidCacheLoadException e) {
+            log.error("could not find properties w id {}", id);
+        }
+        return null;
     }
-
+    // =================================
+    // adapted from ElementHelper...
+    private final void validateProperty(final String key, final Object value) throws IllegalArgumentException {
+        if (null == value)
+            throw ExceptionFactory.propertyValueCanNotBeNull();
+        if (null == key)
+            throw ExceptionFactory.propertyKeyCanNotBeNull();
+        if (key.equals(StringFactory.ID))
+            throw ExceptionFactory.propertyKeyIdIsReserved();
+        if (type == RdbmsElement.PropertyType.EDGE && key.equals(StringFactory.LABEL))
+            throw ExceptionFactory.propertyKeyLabelIsReservedForEdges();
+        if (key.isEmpty())
+            throw ExceptionFactory.propertyKeyCanNotBeEmpty();
+    }
+    // =================================
+    @SuppressWarnings("unchecked")
+    <T> T removeProperty(Long id, String key) {
+        Map<String, Object> p = getProperties(id);
+        if (p.containsKey(key)) {
+            dao.removeProperty(id, key);
+            log.info("removing {}|{} from cache", id, key);
+            return (T) p.remove(key);
+        }
+        return null;
+    }
+    // =================================
+    void clear() {
+        propertyCache.invalidateAll();
+    }
+    // =================================
     private CacheLoader<Long, Map<String, Object>> propertyLoader = new CacheLoader<Long, Map<String, Object>>() {
         @Override
         public Map<String, Object> load(Long id) throws Exception {
-            log.info("using cacheLoader for vertexproperty {}", id);
-            return newHashMap();
+            log.info("using cacheLoader for vertex {}", id);
+            return PropertyDTO.toMap(dao.properties(id));
+        }
+    };
+    RemovalListener<Long, Map<String, Object>> removalListener = new RemovalListener<Long, Map<String, Object>>() {
+        public void onRemoval(RemovalNotification<Long, Map<String, Object>> notification) {
+            log.info("removalListener of {} => {}", notification.getKey(), notification.getValue());
+            if (notification.getCause() == RemovalCause.EXPLICIT) {
+                log.info("explicit removalListener of {} => {}", notification.getKey(), notification.getValue());
+                // cascade to the SoR
+            }
         }
     };
 
+    // =================================
+    @Data
+    public static final class PropertyDTO {
+        public final String key;
+        public final Object value;
+        public static Map<String, Object> toMap(Collection<PropertyDTO> c) {
+            Map<String, Object> m = newHashMap();
+            for (PropertyDTO p: c)
+                m.put(p.key, p.value);
+            return m;
+        }
+    }
+    // =================================
+
     private final LoadingCache<Long, Map<String, Object>> propertyCache;
 
-    final ElementType type;
+    final RdbmsElement.PropertyType type;
+    protected final DaoFactory.PropertyDao dao;
 }

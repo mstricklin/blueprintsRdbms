@@ -4,6 +4,8 @@ package com.tinkerpop.blueprints.impls.rdbms;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.Maps.newHashMap;
 import static com.google.common.collect.Sets.newHashSet;
+import static com.tinkerpop.blueprints.impls.rdbms.PropertyStore.vertexPropertyStore;
+import static com.tinkerpop.blueprints.impls.rdbms.PropertyStore.edgePropertyStore;
 
 import java.util.Map;
 import java.util.Set;
@@ -72,7 +74,8 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
         dao = null;
         vertexCache = null;
         edgeCache = null;
-        propertyCache = null;
+        vps = null;
+        eps = null;
     }
     // =================================
     public RdbmsGraph(final Configuration configuration) {
@@ -91,12 +94,11 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
                 .concurrencyLevel(4)
                 .maximumSize(cacheSize)
                 .build(edgeLoader);
-        propertyCache = CacheBuilder.newBuilder()
-                .concurrencyLevel(4)
-                .maximumSize(cacheSize)
-                .build(propertyLoader);
 
         dao = HsqldbDaoFactory.make(ConfigurationConverter.getProperties(configuration.subset(HIKARI_PREFIX)), this);
+        // TODO: parameterize sizes of vertex & edge caches...?
+        vps = vertexPropertyStore(dao.getPropertyDao(RdbmsElement.PropertyType.VERTEX));
+        eps = edgePropertyStore(dao.getPropertyDao(RdbmsElement.PropertyType.EDGE));
     }
     // =================================
     private void dumpProperties(RdbmsElement e) {
@@ -132,13 +134,11 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
             // }
         }
     }
-
     // =================================
     @Override
     public Features getFeatures() {
         return FEATURES;
     }
-
     // =================================
     @Override
     public Vertex addVertex(Object id) {
@@ -164,6 +164,7 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
     @Override
     public void removeVertex(Vertex vertex) {
         checkNotNull(vertex);
+        // TODO: remove properties
         for (Edge e : vertex.getEdges(Direction.BOTH))
             removeEdge(e);
         Long longId = (Long) vertex.getId();
@@ -176,7 +177,6 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
     public Iterable<Vertex> getVertices() {
         return new CovariantIterable<Vertex>(dao.getVertexDao().list());
     }
-
     // =================================
     @Override
     public Iterable<Vertex> getVertices(String key, Object value) {
@@ -235,18 +235,10 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
         Long longId = e.rawId();
         e.getOutVertex().removeEdge(longId);
         e.getInVertex().removeEdge(longId);
+        // TODO: remove properties
 
         dao.getEdgeDao().remove(longId);
         edgeCache.invalidate(longId);
-    }
-    // =================================
-    Map<String, Object> getProperties(RdbmsElement.ElementId id) {
-        try {
-            return propertyCache.get(id);
-        } catch (ExecutionException | InvalidCacheLoadException e) {
-            log.error("could not find properties w id {}", id);
-        }
-        return null;
     }
     // =================================
     @Override
@@ -331,7 +323,15 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
         dao.clear();
         edgeCache.invalidateAll();
         vertexCache.invalidateAll();
-        propertyCache.invalidateAll();
+        vps.clear();
+        eps.clear();
+    }
+    // =================================
+    public PropertyStore vertexPropertyCache() {
+        return vps;
+    }
+    public PropertyStore edgePropertyCache() {
+        return eps;
     }
     // =================================
     private RdbmsVertex cache(RdbmsVertex v) {
@@ -362,21 +362,12 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
             return dao.getEdgeDao().get(id);
         }
     };
-    private CacheLoader<RdbmsElement.ElementId, Map<String, Object>> propertyLoader = new CacheLoader<RdbmsElement.ElementId, Map<String, Object>>() {
-        @Override
-        public Map<String, Object> load(RdbmsElement.ElementId key) throws Exception {
-            log.info("using cacheLoader for property {}", key);
-            return RdbmsElement.PropertyDTO.toMap( dao.getPropertyDao().properties(key) );
-        }
-    };
     // =================================
     private final DaoFactory dao;
 
     private final LoadingCache<Long, RdbmsVertex> vertexCache;
     private final LoadingCache<Long, RdbmsEdge> edgeCache;
 
-    // Unique key is id+type, contained in PropKey
-    private final LoadingCache<RdbmsElement.ElementId, Map<String, Object>> propertyCache;
-
-
+    private final PropertyStore vps;
+    private final PropertyStore eps;
 }

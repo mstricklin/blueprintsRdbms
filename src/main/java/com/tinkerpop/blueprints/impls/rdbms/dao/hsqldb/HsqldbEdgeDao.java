@@ -104,13 +104,21 @@ public class HsqldbEdgeDao implements EdgeDao {
         return Collections.emptyList();
     }
     // =================================
-    static String sqlEdgeByVertex = "select * from edge where out_vertex_id = :id or in_vertex_id = :id";
+    private final static String sqlEdgeByVertex = "select * from edge where out_vertex_id = :id or in_vertex_id = :id";
     @Override
     public Iterable<RdbmsEdge> list(Long vertexId) {
         try (Connection con = sql2o.open()) {
             return con.createQuery(sqlEdgeByVertex, "get edges by vertex "+vertexId)
                     .addParameter("id", vertexId)
                     .executeAndFetch(makeEdge);
+        }
+    }
+    // =================================
+    static String sqlClear = "truncate table edge restart identity and commit no check";
+    @Override
+    public void clear() {
+        try (Connection con = sql2o.open()) {
+            con.createQuery(sqlClear, "clear edges").executeUpdate();
         }
     }
     // =================================

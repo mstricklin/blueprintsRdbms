@@ -17,11 +17,12 @@ import com.tinkerpop.blueprints.impls.GraphTest;
 
 import lombok.extern.slf4j.Slf4j;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 @Slf4j
-public class RdbmsTest extends GraphTest {
+public class RdbmsTest {
     private static final String GRAPH_PROPERTIES = "graph.properties";
 
     // =================================
@@ -37,70 +38,70 @@ public class RdbmsTest extends GraphTest {
     @Test
     public void testAddGetVertex() throws Exception {
         Vertex v0 = graph_.addVertex(null);
-        assertNotNull(v0);
+        Assert.assertNotNull(v0);
         Vertex v0a = graph_.getVertex(v0.getId());
-        assertEquals(v0, v0a);
+        Assert.assertEquals(v0, v0a);
     }
     // =================================
     @Test
     public void testGetNonexistentElements() throws Exception {
-        assertNull(graph_.getVertex(Integer.MAX_VALUE));
-        assertNull(graph_.getEdge(Integer.MAX_VALUE));
+        Assert.assertNull(graph_.getVertex(Integer.MAX_VALUE));
+        Assert.assertNull(graph_.getEdge(Integer.MAX_VALUE));
     }
     // =================================
     @Test
     public void testRemoveVertex() throws Exception {
         Vertex v0 = graph_.addVertex(null);
-        assertNotNull(v0);
+        Assert.assertNotNull(v0);
         graph_.removeVertex(v0);
-        assertNull(graph_.getVertex(v0.getId()));
+        Assert.assertNull(graph_.getVertex(v0.getId()));
 
         Vertex vA = graph_.addVertex(null);
         Vertex vB = graph_.addVertex(null);
         Edge e = graph_.addEdge(null, vA, vB, "test-edge");
-        assertNotNull(graph_.getVertex(vA.getId()));
-        assertNotNull(graph_.getVertex(vB.getId()));
-        assertNotNull(graph_.getEdge(e.getId()));
+        Assert.assertNotNull(graph_.getVertex(vA.getId()));
+        Assert.assertNotNull(graph_.getVertex(vB.getId()));
+        Assert.assertNotNull(graph_.getEdge(e.getId()));
 
         graph_.removeVertex(vA);
-        assertNull(graph_.getVertex(vA.getId()));
-        assertNull(graph_.getEdge(e.getId()));
-        assertNotNull(graph_.getVertex(vB.getId()));
+        Assert.assertNull(graph_.getVertex(vA.getId()));
+        Assert.assertNull(graph_.getEdge(e.getId()));
+        Assert.assertNotNull(graph_.getVertex(vB.getId()));
     }
 
     // =================================
     @Test
     public void testSelfRemoveVertex() throws Exception {
         Vertex v0 = graph_.addVertex(null);
-        assertNotNull(v0);
+        Assert.assertNotNull(v0);
         v0.remove();
-        assertNull(graph_.getVertex(v0.getId()));
+        Assert.assertNull(graph_.getVertex(v0.getId()));
 
         Vertex vA = graph_.addVertex(null);
         Vertex vB = graph_.addVertex(null);
         Edge e = graph_.addEdge(null, vA, vB, "test-edge");
-        assertNotNull(graph_.getVertex(vA.getId()));
-        assertNotNull(graph_.getVertex(vB.getId()));
-        assertNotNull(graph_.getEdge(e.getId()));
+        Assert.assertNotNull(graph_.getVertex(vA.getId()));
+        Assert.assertNotNull(graph_.getVertex(vB.getId()));
+        Assert.assertNotNull(graph_.getEdge(e.getId()));
 
         vA.remove();
-        assertNull(graph_.getVertex(vA.getId()));
-        assertNull(graph_.getEdge(e.getId()));
-        assertNotNull(graph_.getVertex(vB.getId()));
+        Assert.assertNull(graph_.getVertex(vA.getId()));
+        Assert.assertNull(graph_.getEdge(e.getId()));
+        Assert.assertNotNull(graph_.getVertex(vB.getId()));
     }
     // =================================
     @Test
     public void testAddGetEdge() throws Exception {
         Vertex vA = graph_.addVertex(null);
         Vertex vB = graph_.addVertex(null);
-        assertNotNull(vA);
-        assertNotNull(vB);
+        Assert.assertNotNull(vA);
+        Assert.assertNotNull(vB);
         Edge e = graph_.addEdge(null, vA, vB, "test-edge");
-        assertNotNull(graph_.getEdge(e.getId()));
-        assertEquals("test-edge", e.getLabel());
+        Assert.assertNotNull(graph_.getEdge(e.getId()));
+        Assert.assertEquals("test-edge", e.getLabel());
 
-        assertEquals(vA, e.getVertex(Direction.OUT));
-        assertEquals(vB, e.getVertex(Direction.IN));
+        Assert.assertEquals(vA, e.getVertex(Direction.OUT));
+        Assert.assertEquals(vB, e.getVertex(Direction.IN));
 
         assertThat(vA.getEdges(Direction.OUT), hasItem(e));
         assertThat(vB.getEdges(Direction.IN), hasItem(e));
@@ -110,15 +111,15 @@ public class RdbmsTest extends GraphTest {
     public void testAddEdgeFromVertex() throws Exception {
         Vertex vA = graph_.addVertex(null);
         Vertex vB = graph_.addVertex(null);
-        assertNotNull(vA);
-        assertNotNull(vB);
+        Assert.assertNotNull(vA);
+        Assert.assertNotNull(vB);
         Edge e = vA.addEdge("test-edge", vB);
-        assertNotNull(e);
-        assertNotNull(graph_.getEdge(e.getId()));
-        assertEquals("test-edge", e.getLabel());
+        Assert.assertNotNull(e);
+        Assert.assertNotNull(graph_.getEdge(e.getId()));
+        Assert.assertEquals("test-edge", e.getLabel());
 
-        assertEquals(vA, e.getVertex(Direction.OUT));
-        assertEquals(vB, e.getVertex(Direction.IN));
+        Assert.assertEquals(vA, e.getVertex(Direction.OUT));
+        Assert.assertEquals(vB, e.getVertex(Direction.IN));
 
         assertThat(vA.getEdges(Direction.OUT), hasItem(e));
         assertThat(vB.getEdges(Direction.IN), hasItem(e));
@@ -128,14 +129,14 @@ public class RdbmsTest extends GraphTest {
     public void testRemoveEdge() throws Exception {
         Vertex vA = graph_.addVertex(null);
         Vertex vB = graph_.addVertex(null);
-        assertNotNull(vA);
-        assertNotNull(vB);
+        Assert.assertNotNull(vA);
+        Assert.assertNotNull(vB);
         Edge e = graph_.addEdge(null, vA, vB, "test-edge");
-        assertNotNull(e);
+        Assert.assertNotNull(e);
         assertThat(vA.getEdges(Direction.OUT), hasItem(e));
 
         graph_.removeEdge(e);
-        assertNull(graph_.getEdge(e.getId()));
+        Assert.assertNull(graph_.getEdge(e.getId()));
 
         assertThat(vA.getEdges(Direction.OUT), not(hasItem(e)));
         assertThat(vB.getEdges(Direction.IN), not(hasItem(e)));
@@ -145,13 +146,13 @@ public class RdbmsTest extends GraphTest {
     public void testSelfRemoveEdge() throws Exception {
         Vertex vA = graph_.addVertex(null);
         Vertex vB = graph_.addVertex(null);
-        assertNotNull(vA);
-        assertNotNull(vB);
+        Assert.assertNotNull(vA);
+        Assert.assertNotNull(vB);
         Edge e = graph_.addEdge(null, vA, vB, "test-edge");
-        assertNotNull(e);
+        Assert.assertNotNull(e);
         e.remove();
         graph_.removeEdge(e);
-        assertNull(graph_.getEdge(e.getId()));
+        Assert.assertNull(graph_.getEdge(e.getId()));
         assertThat(vA.getEdges(Direction.OUT), not(hasItem(e)));
         assertThat(vB.getEdges(Direction.IN), not(hasItem(e)));
     }
@@ -163,7 +164,7 @@ public class RdbmsTest extends GraphTest {
             vL.add(graph_.addVertex(null));
         }
         List<Vertex> gL = newArrayList( graph_.getVertices() );
-        assertEquals(vL, gL);
+        Assert.assertEquals(vL, gL);
     }
     // =================================
     @Test
@@ -175,7 +176,7 @@ public class RdbmsTest extends GraphTest {
             eL.add( graph_.addEdge(null, vA, vB, "edge-"+i) );
         }
         List<Edge> gL = newArrayList( graph_.getEdges() );
-        assertEquals(eL, gL);
+        Assert.assertEquals(eL, gL);
     }
     // =================================
     @Test
@@ -190,13 +191,13 @@ public class RdbmsTest extends GraphTest {
         assertThat(e, hasItem(e0));
         assertThat(e, hasItem(e1));
         e = newArrayList( vA.getEdges(Direction.IN) );
-        assertTrue(e.isEmpty());
+        Assert.assertTrue(e.isEmpty());
 
         e = newArrayList( vB.getEdges(Direction.IN) );
         assertThat(e, hasItem(e0));
         assertThat(e, hasItem(e1));
         e = newArrayList( vB.getEdges(Direction.OUT) );
-        assertTrue(e.isEmpty());
+        Assert.assertTrue(e.isEmpty());
     }
     // =================================
     @Test
@@ -211,13 +212,13 @@ public class RdbmsTest extends GraphTest {
         assertThat(e, hasItem(e0));
         assertThat(e, not( hasItem(e1) ));
         e = newArrayList( vA.getEdges(Direction.IN, "edge0") );
-        assertTrue(e.isEmpty());
+        Assert.assertTrue(e.isEmpty());
 
         e = newArrayList( vB.getEdges(Direction.IN, "edge0") );
         assertThat(e, hasItem(e0));
         assertThat(e, not( hasItem(e1) ));
         e = newArrayList( vB.getEdges(Direction.OUT, "edge0") );
-        assertTrue(e.isEmpty());
+        Assert.assertTrue(e.isEmpty());
     }
     // =================================
     @Test
@@ -238,7 +239,8 @@ public class RdbmsTest extends GraphTest {
                 log.info("\t{} => {}", k, v.getProperty(k));
         }
         log.info("=====");
-        assertTrue(true);
+        Assert.assertTrue(true);
+        // TODO!!!
     }
 
     // X add vertex
@@ -266,30 +268,30 @@ public class RdbmsTest extends GraphTest {
     public void testVertexProperties() throws Exception {
         Vertex v = graph_.addVertex(null);
         log.info("new vertex {}", v);
-        assertNotNull(v);
+        Assert.assertNotNull(v);
         v.setProperty("String", "aaa");
         v.setProperty("Long", 17L);
         v.setProperty("Boolean", true);
         Set<String> keys = v.getPropertyKeys();
         assertThat(keys, hasItem("String"));
-        assertEquals("aaa", v.getProperty("String"));
+        Assert.assertEquals("aaa", v.getProperty("String"));
         assertThat(keys, hasItem("Long"));
-        assertEquals(17L, v.getProperty("Long"));
+        Assert.assertEquals(17L, v.getProperty("Long"));
         assertThat(keys, hasItem("Boolean"));
-        assertEquals(Boolean.TRUE, v.getProperty("Boolean"));
+        Assert.assertEquals(Boolean.TRUE, v.getProperty("Boolean"));
 
         // remove property
         v.removeProperty("Boolean");
         keys = v.getPropertyKeys();
         assertThat(keys, not(hasItem("Boolean")));
-        assertNull(v.getProperty("Boolean"));
+        Assert.assertNull(v.getProperty("Boolean"));
 
         // overwrite property
         keys = v.getPropertyKeys();
         assertThat(keys, hasItem("String"));
-        assertEquals("aaa", v.getProperty("String"));
+        Assert.assertEquals("aaa", v.getProperty("String"));
         v.setProperty("String", "bbb");
-        assertEquals("bbb", v.getProperty("String"));
+        Assert.assertEquals("bbb", v.getProperty("String"));
     }
 
     // =================================
@@ -299,31 +301,31 @@ public class RdbmsTest extends GraphTest {
         Vertex v1 = graph_.addVertex(null);
         Edge e = graph_.addEdge(null, v0, v1, "test-vertex");
         log.info("new edge {}", e);
-        assertNotNull(e);
-        assertEquals("test-vertex", e.getLabel());
+        Assert.assertNotNull(e);
+        Assert.assertEquals("test-vertex", e.getLabel());
         e.setProperty("String", "aaa");
         e.setProperty("Long", 17L);
         e.setProperty("Boolean", true);
         Set<String> keys = e.getPropertyKeys();
         assertThat(keys, hasItem("String"));
-        assertEquals("aaa", e.getProperty("String"));
+        Assert.assertEquals("aaa", e.getProperty("String"));
         assertThat(keys, hasItem("Long"));
-        assertEquals(17L, e.getProperty("Long"));
+        Assert.assertEquals(17L, e.getProperty("Long"));
         assertThat(keys, hasItem("Boolean"));
-        assertEquals(Boolean.TRUE, e.getProperty("Boolean"));
+        Assert.assertEquals(Boolean.TRUE, e.getProperty("Boolean"));
 
         // remove property
         e.removeProperty("Boolean");
         keys = e.getPropertyKeys();
         assertThat(keys, not(hasItem("Boolean")));
-        assertNull(e.getProperty("Boolean"));
+        Assert.assertNull(e.getProperty("Boolean"));
 
         // overwrite property
         keys = e.getPropertyKeys();
         assertThat(keys, hasItem("String"));
-        assertEquals("aaa", e.getProperty("String"));
+        Assert.assertEquals("aaa", e.getProperty("String"));
         e.setProperty("String", "bbb");
-        assertEquals("bbb", e.getProperty("String"));
+        Assert.assertEquals("bbb", e.getProperty("String"));
     }
 
     // =================================
@@ -335,17 +337,17 @@ public class RdbmsTest extends GraphTest {
             log.info("added vertex {} {}", i, v);
         }
         Vertex v0 = graph_.getVertices().iterator().next();
-        assertNotNull(v0);
+        Assert.assertNotNull(v0);
         v0.setProperty("String", "aaa");
         v0.setProperty("Long", 17L);
         v0.setProperty("Boolean", true);
         Set<String> keys = v0.getPropertyKeys();
         assertThat(keys, hasItem("String"));
-        assertEquals("aaa", v0.getProperty("String"));
+        Assert.assertEquals("aaa", v0.getProperty("String"));
         assertThat(keys, hasItem("Long"));
-        assertEquals(17L, v0.getProperty("Long"));
+        Assert.assertEquals(17L, v0.getProperty("Long"));
         assertThat(keys, hasItem("Boolean"));
-        assertEquals(Boolean.TRUE, v0.getProperty("Boolean"));
+        Assert.assertEquals(Boolean.TRUE, v0.getProperty("Boolean"));
 
 
         for (int i = 1; i <= 5; i += 2) {
@@ -436,26 +438,24 @@ public class RdbmsTest extends GraphTest {
             last = v;
             log.info("added vertex {} {}", i, v);
         }
-        assertTrue(true);
+        Assert.assertTrue(true);
     }
 
 
     // =================================
-    @Override
     public Graph generateGraph() {
         URL u = getClass().getClassLoader().getResource(GRAPH_PROPERTIES);
         return GraphFactory.open(u.getFile());
     }
 
     // =================================
-    @Override
     public Graph generateGraph(String graphDirectoryName) {
         log.error("can't generate a graph from a dir name...?");
         return null;
     }
     // =================================
     @Before
-    protected void setUp() throws Exception {
+    public void setUp() throws Exception {
         graph_ = generateGraph();
 
         @SuppressWarnings("unchecked")
@@ -466,26 +466,11 @@ public class RdbmsTest extends GraphTest {
     }
     // =================================
     @After
-    protected void tearDown() throws Exception {
+    public void tearDown() throws Exception {
         graph_.shutdown();
         // remove stored graph...?
         graph_ = null;
     }
     // =================================
     Graph graph_ = null;
-
-    // =================================
-    @Override
-    public void doTestSuite(TestSuite testSuite) throws Exception {
-        String doTest = System.getProperty("testRdbmsGraph");
-        if (doTest == null || doTest.equals("true")) {
-            for (Method method : testSuite.getClass().getDeclaredMethods()) {
-                if (method.getName().startsWith("test")) {
-                    System.out.println("Testing " + method.getName() + "...");
-                    method.invoke(testSuite);
-                }
-            }
-        }
-
-    }
 }

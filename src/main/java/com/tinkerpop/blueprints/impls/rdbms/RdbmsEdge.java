@@ -15,7 +15,7 @@ public class RdbmsEdge extends RdbmsElement implements Edge {
 
     // =================================
     public RdbmsEdge(final long edgeID, final long outID, final long inID, final String label, final RdbmsGraph graph) {
-        super(edgeID, graph);
+        super(graph.edgePropertyCache(), edgeID, graph);
         this.outVertexId = outID;
         this.inVertexId = inID;
         this.label = label;

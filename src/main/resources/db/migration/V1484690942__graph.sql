@@ -19,24 +19,6 @@ create table edge (
 create index edge_in_vertex_id_idx  on edge (in_vertex_id);
 create index edge_out_vertex_id_idx on edge (out_vertex_id);
 
-create table vertex_property (
-    vertex_id     integer,
-    key           varchar(255),
-    value         varchar(255)
-);
-
-create index vertex_property_id_idx     on vertex_property (vertex_id);
-create index vertex_property_key_idx    on vertex_property (key);
-
-create table edge_property (
-    edge_id       integer,
-    key           varchar(255),
-    value         varchar(255)
-);
-
-create index edge_property_id_idx     on edge_property (edge_id);
-create index edge_property_key_idx    on edge_property (key);
-
 -- types are 'V' or 'E' for vertex or edge, respectively
 create table property (
     element_id    integer,

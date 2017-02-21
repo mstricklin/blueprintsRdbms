@@ -5,6 +5,7 @@ package com.tinkerpop.blueprints.impls.rdbms.dao;
 import java.util.List;
 import java.util.Map;
 
+import com.tinkerpop.blueprints.impls.rdbms.PropertyStore;
 import com.tinkerpop.blueprints.impls.rdbms.RdbmsElement;
 import com.tinkerpop.blueprints.impls.rdbms.RdbmsEdge;
 import com.tinkerpop.blueprints.impls.rdbms.RdbmsVertex;
@@ -12,10 +13,11 @@ import com.tinkerpop.blueprints.impls.rdbms.RdbmsVertex;
 public interface DaoFactory {
     // =================================
     interface PropertyDao {
-        void setProperty(RdbmsElement.ElementId id, String key, Object value);
-        <T> T getProperty(RdbmsElement.ElementId id, String key);
-        void removeProperty(RdbmsElement.ElementId id, String key);
-        List<RdbmsElement.PropertyDTO> properties(RdbmsElement.ElementId id);
+        void setProperty(long id, String key, Object value);
+        <T> T getProperty(long id, String key);
+        void removeProperty(long id, String key);
+        List<PropertyStore.PropertyDTO> properties(long id);
+        void clear();
     }
     // =================================
     interface VertexDao {
@@ -24,6 +26,7 @@ public interface DaoFactory {
         void remove(long id);
         Iterable<RdbmsVertex> list();
         Iterable<RdbmsVertex> list(String key, Object value);
+        void clear();
     }
     // =================================
     interface EdgeDao {
@@ -33,6 +36,7 @@ public interface DaoFactory {
         Iterable<RdbmsEdge> list();
         Iterable<RdbmsEdge> list(String key, Object value);
         Iterable<RdbmsEdge> list(Long vertexId);
+        void clear();
     }
     // =================================
     interface SerializerDao {
@@ -43,7 +47,7 @@ public interface DaoFactory {
 
     VertexDao   getVertexDao();
     EdgeDao     getEdgeDao();
-    PropertyDao getPropertyDao();
+    PropertyDao getPropertyDao(RdbmsElement.PropertyType type);
     void clear();
     void close();
 

@@ -22,14 +22,12 @@ import com.tinkerpop.blueprints.impls.rdbms.dao.DaoFactory.VertexDao;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class HsqldbVertexDao {
+public class HsqldbVertexDao implements VertexDao {
 
     HsqldbVertexDao(DataSource dataSource, RdbmsGraph graph, Serializer serializer_) {
         this.graph = graph;
         sql2o = new Sql2o(dataSource);
         serializer = serializer_;
-//        propertyDao = new HsqldbPropertyDaoHelper(RdbmsElement.PropertyType.VERTEX,
-//                dataSource, serializer_);
     }
     // =================================
     private ResultSetHandler<RdbmsVertex> makeVertex = new ResultSetHandler<RdbmsVertex>() {
@@ -104,6 +102,14 @@ public class HsqldbVertexDao {
                     .addParameter("value", serializedValue)
                     .addColumnMapping("element_id", "id")
                     .executeAndFetch(makeVertex);
+        }
+    }
+    // =================================
+    private final static String sqlClear = "truncate table vertex restart identity and commit no check";
+    @Override
+    public void clear() {
+        try (Connection con = sql2o.open()) {
+            con.createQuery(sqlClear, "clear vertices").executeUpdate();
         }
     }
     // =================================

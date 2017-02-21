@@ -5,6 +5,7 @@ import java.util.List;
 
 import javax.sql.DataSource;
 
+import com.tinkerpop.blueprints.impls.rdbms.PropertyStore;
 import com.tinkerpop.blueprints.impls.rdbms.RdbmsElement;
 import org.sql2o.Connection;
 import org.sql2o.Sql2o;
@@ -17,21 +18,19 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class HsqldbPropertyDao implements PropertyDao {
 
-	HsqldbPropertyDao(DataSource dataSource_, Serializer serializer_) {
+	HsqldbPropertyDao(RdbmsElement.PropertyType type_, DataSource dataSource_, Serializer serializer_) {
+	    type = type_;
         sql2o = new Sql2o(dataSource_);
         serializer = serializer_;
     }
 	// =================================
 	@Override
-	public void setProperty(RdbmsElement.ElementId id, String key, Object value) {
-	    // TODO: clean up serialization
+	public void setProperty(long id, String key, Object value) {
         String serializedValue = serializer.serialize(value);
-        log.info("serialized version of {} is '{}'", value, serializedValue);
-
         try (Connection con = sql2o.open()) {
-            con.createQuery(SET_QUERY, "update property")
-                    .addParameter("id", id.id)
-                    .addParameter("type", id.type)
+            con.createQuery(SET_QUERY, "upsert property")
+                    .addParameter("id", id)
+                    .addParameter("type", type)
                     .addParameter("key", key)
                     .addParameter("value", serializedValue)
                     .executeUpdate();
@@ -39,14 +38,16 @@ public class HsqldbPropertyDao implements PropertyDao {
         }
 	}
 	// =================================
+    // This is probably not needed, since it's very close to as cheap to get
+    // all of the properties for an element as it is to get one.
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T> T getProperty(RdbmsElement.ElementId id, String key) {
+	public <T> T getProperty(long id, String key) {
         log.info("property get {} {}", id, key);
         try (Connection con = sql2o.open()) {
             String value = con.createQuery(GET_QUERY, "get property")
-                    .addParameter("id", id.id)
-                    .addParameter("type", id.type)
+                    .addParameter("id", id)
+                    .addParameter("type", type)
                     .addParameter("key", key)
                     .executeScalar(String.class);
             log.info("returned prop for {} {}: {}", id, key, value);
@@ -57,11 +58,12 @@ public class HsqldbPropertyDao implements PropertyDao {
 	}
 	// =================================
 	@Override
-	public void removeProperty(RdbmsElement.ElementId id, String key) {
+	public void removeProperty(long id, String key) {
+	    log.info("remove property {} => {}", id, key);
         try (Connection con = sql2o.open()) {
             con.createQuery(RM_QUERY, "remove property")
-                    .addParameter("id", id.id)
-                    .addParameter("type", id.type)
+                    .addParameter("id", id)
+                    .addParameter("type", type)
                     .addParameter("key", key)
                     .executeUpdate();
             log.info("deleted prop for {} {}", id, key);
@@ -69,22 +71,36 @@ public class HsqldbPropertyDao implements PropertyDao {
 	}
 	// =================================
 	@Override
-	public List<RdbmsElement.PropertyDTO> properties(RdbmsElement.ElementId id) {
+	public List<PropertyStore.PropertyDTO> properties(long id) {
         try (Connection con = sql2o.open()) {
             log.info("get all properties for {}", id);
             return con.createQuery(GET_ALL_QUERY, "get all properties "+id)
-                    .addParameter("id", id.id)
-                    .addParameter("type", id.type)
-                    .executeAndFetch(RdbmsElement.PropertyDTO.class);
+                    .addParameter("id", id)
+                    .addParameter("type", type)
+                    .executeAndFetch(PropertyStore.PropertyDTO.class);
         }
 	}
+    // =================================
+    private final static String sqlClear = "truncate table property restart identity and commit no check";
+    @Override
+    public void clear() {
+        try (Connection con = sql2o.open()) {
+            con.createQuery(sqlClear, "clear properties").executeUpdate();
+        }
+    }
+    static void clear(DataSource dataSource_) {
+        try (Connection con = new Sql2o(dataSource_).open()) {
+            con.createQuery(sqlClear, "clear properties").executeUpdate();
+        }
+    }
 	// =================================
+    RdbmsElement.PropertyType type;
     private final Sql2o sql2o;
     private final Serializer serializer;
     // =================================
     private final static String SET_QUERY = "MERGE INTO property AS p " +
             "USING (VALUES(:id, :type, :key, :value)) AS r(id,type,key,value) " +
-            "ON p.element_id = r.id AND p.type = t.type AND p.key = r.key " +
+            "ON p.element_id = r.id AND p.type = r.type AND p.key = r.key " +
             "WHEN MATCHED THEN " +
             "      UPDATE SET p.value = r.value " +
             "WHEN NOT MATCHED THEN " +
