@@ -24,11 +24,18 @@ public class HsqldbPropertyDao implements PropertyDao {
         serializer = serializer_;
     }
 	// =================================
-	@Override
+    private static final String UPSERT_QUERY = "MERGE INTO property AS p " +
+            "USING (VALUES(:id, :type, :key, :value)) AS r(id,type,key,value) " +
+            "ON p.element_id = r.id AND p.type = r.type AND p.key = r.key " +
+            "WHEN MATCHED THEN " +
+            "      UPDATE SET p.value = r.value " +
+            "WHEN NOT MATCHED THEN " +
+            "    INSERT VALUES r.id, r.type, r.key, r.value";
+    @Override
 	public void setProperty(long id, String key, Object value) {
         String serializedValue = serializer.serialize(value);
         try (Connection con = sql2o.open()) {
-            con.createQuery(SET_QUERY, "upsert property")
+            con.createQuery(UPSERT_QUERY, "upsert property")
                     .addParameter("id", id)
                     .addParameter("type", type)
                     .addParameter("key", key)
@@ -40,7 +47,8 @@ public class HsqldbPropertyDao implements PropertyDao {
 	// =================================
     // This is probably not needed, since it's very close to as cheap to get
     // all of the properties for an element as it is to get one.
-	@SuppressWarnings("unchecked")
+    private static final String GET_QUERY = "select value from property where element_id = :id and type = :type and key = :key";
+    @SuppressWarnings("unchecked")
 	@Override
 	public <T> T getProperty(long id, String key) {
         log.info("property get {} {}", id, key);
@@ -56,9 +64,24 @@ public class HsqldbPropertyDao implements PropertyDao {
             return (T)o;
         }
 	}
+    // =================================
+    private static final String CLEAR_QUERY = "delete from property " +
+            "where element_id = :id and type = :type";
+    @Override
+    public void remove(long id) {
+        log.info("clear property {}", id);
+        try (Connection con = sql2o.open()) {
+            con.createQuery(CLEAR_QUERY, "clear property")
+                    .addParameter("id", id)
+                    .addParameter("type", type)
+                    .executeUpdate();
+        }
+    }
 	// =================================
-	@Override
-	public void removeProperty(long id, String key) {
+    private static final String RM_QUERY = "delete from property " +
+            "where element_id = :id and type = :type and key = :key";
+    @Override
+	public void remove(long id, String key) {
 	    log.info("remove property {} => {}", id, key);
         try (Connection con = sql2o.open()) {
             con.createQuery(RM_QUERY, "remove property")
@@ -66,11 +89,12 @@ public class HsqldbPropertyDao implements PropertyDao {
                     .addParameter("type", type)
                     .addParameter("key", key)
                     .executeUpdate();
-            log.info("deleted prop for {} {}", id, key);
         }
 	}
 	// =================================
-	@Override
+    private static final String GET_ALL_QUERY = "select key, value from property " +
+            "where element_id = :id and type = :type";
+    @Override
 	public List<PropertyStore.PropertyDTO> properties(long id) {
         try (Connection con = sql2o.open()) {
             log.info("get all properties for {}", id);
@@ -81,7 +105,7 @@ public class HsqldbPropertyDao implements PropertyDao {
         }
 	}
     // =================================
-    private final static String sqlClear = "truncate table property restart identity and commit no check";
+    private static final String sqlClear = "truncate table property restart identity and commit no check";
     @Override
     public void clear() {
         try (Connection con = sql2o.open()) {
@@ -94,20 +118,8 @@ public class HsqldbPropertyDao implements PropertyDao {
         }
     }
 	// =================================
-    RdbmsElement.PropertyType type;
+    private final RdbmsElement.PropertyType type;
     private final Sql2o sql2o;
     private final Serializer serializer;
     // =================================
-    private final static String SET_QUERY = "MERGE INTO property AS p " +
-            "USING (VALUES(:id, :type, :key, :value)) AS r(id,type,key,value) " +
-            "ON p.element_id = r.id AND p.type = r.type AND p.key = r.key " +
-            "WHEN MATCHED THEN " +
-            "      UPDATE SET p.value = r.value " +
-            "WHEN NOT MATCHED THEN " +
-            "    INSERT VALUES r.id, r.type, r.key, r.value";
-    private final static String GET_QUERY = "select value from property where element_id = :id and type = :type and key = :key";
-    private final static String RM_QUERY = "delete from property " +
-            "where element_id = :id and type = :type and key = :key";
-    private final static String GET_ALL_QUERY = "select key, value from property " +
-            "where element_id = :id and type = :type";
-}
+    }

@@ -4,16 +4,16 @@ package com.tinkerpop.blueprints.impls.rdbms;
 import static com.google.common.collect.Lists.newArrayList;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.not;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertFalse;
 
-import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
 import com.tinkerpop.blueprints.*;
-import com.tinkerpop.blueprints.impls.GraphTest;
 
 import lombok.extern.slf4j.Slf4j;
 import org.junit.After;
@@ -227,20 +227,42 @@ public class RdbmsTest {
         Vertex vB = graph_.addVertex(null);
         vA.setProperty("String", "aaa");
         vB.setProperty("String", "bbb");
-        for (Vertex v: graph_.getVertices()) {
-            log.info(v.toString());
-            for (String k: v.getPropertyKeys())
-                log.info("\t{} => {}", k, v.getProperty(k));
+        Collection<Vertex> vertices = newArrayList( graph_.getVertices() );
+        assertThat(vertices, hasItem(vA));
+        assertThat(vertices, hasItem(vB));
+        vertices = newArrayList( graph_.getVertices("String", "aaa") );
+        assertThat(vertices, hasItem(vA));
+        assertThat(vertices, not(hasItem(vB)));
+        for (Vertex v: vertices) {
+            assertThat(v.getPropertyKeys(), hasItem("String"));
+            assertEquals("aaa", v.getProperty("String"));
         }
-        log.info("=====");
-        for (Vertex v: graph_.getVertices("String", "aaa")) {
-            log.info(v.toString());
-            for (String k: v.getPropertyKeys())
-                log.info("\t{} => {}", k, v.getProperty(k));
+    }
+    // =================================
+    @Test
+    public void testEdgeByProperties() throws Exception {
+        Vertex vA = graph_.addVertex(null);
+        Vertex vB = graph_.addVertex(null);
+        Edge e0a  = vA.addEdge("edge0", vB);
+        Edge e0b = vA.addEdge("edge0a", vB);
+        Edge e1  = vA.addEdge("edge1", vB);
+
+        e0a.setProperty("String", "aaa");
+        e0b.setProperty("String", "aaa");
+        e1.setProperty("String", "bbb");
+
+        Collection<Edge> edges = newArrayList( graph_.getEdges() );
+        assertThat(edges, hasItem(e0a));
+        assertThat(edges, hasItem(e0b));
+        assertThat(edges, hasItem(e1));
+        edges = newArrayList( graph_.getEdges("String", "aaa") );
+        assertThat(edges, hasItem(e0a));
+        assertThat(edges, hasItem(e0b));
+        assertThat(edges, not(hasItem(e1)));
+        for (Edge e: edges) {
+            assertThat(e.getPropertyKeys(), hasItem("String"));
+            assertEquals("aaa", e.getProperty("String"));
         }
-        log.info("=====");
-        Assert.assertTrue(true);
-        // TODO!!!
     }
 
     // X add vertex
@@ -259,6 +281,8 @@ public class RdbmsTest {
     // X remove edge
     // X iterate vertices
     // X iterate edges
+
+    // test properties removed with owning element
     // iterate vertices by property
     // iterate edges by property
 
@@ -292,6 +316,8 @@ public class RdbmsTest {
         Assert.assertEquals("aaa", v.getProperty("String"));
         v.setProperty("String", "bbb");
         Assert.assertEquals("bbb", v.getProperty("String"));
+
+        graph_.removeVertex(v);
     }
 
     // =================================

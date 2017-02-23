@@ -66,7 +66,7 @@ public class HsqldbDaoFactory implements DaoFactory {
     // =================================
     @Override
     public EdgeDao getEdgeDao() {
-    	return new HsqldbEdgeDao(ds, graph);
+    	return new HsqldbEdgeDao(ds, graph, serializer);
     }
     // =================================
     @Override

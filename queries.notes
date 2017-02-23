@@ -15,4 +15,9 @@ WHEN MATCHED THEN
 WHEN NOT MATCHED THEN
     INSERT VALUES r.id, r.key, r.value
 
+select * from edge where id in 
+(select distinct element_id from property where key = 'e0-0' and value = 'AwFhYeE=')
 
+select id, out_vertex_id, in_vertex_id, label from edge e, property p
+where e.id = p.element_id
+and p.key = 'e0-0' and p.value = 'AwFhYeE=' and type='E'

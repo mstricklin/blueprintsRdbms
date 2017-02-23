@@ -15,7 +15,8 @@ public interface DaoFactory {
     interface PropertyDao {
         void setProperty(long id, String key, Object value);
         <T> T getProperty(long id, String key);
-        void removeProperty(long id, String key);
+        void remove(long id);
+        void remove(long id, String key);
         List<PropertyStore.PropertyDTO> properties(long id);
         void clear();
     }

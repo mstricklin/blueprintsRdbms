@@ -7,6 +7,7 @@ import static com.google.common.collect.Sets.newHashSet;
 import static com.tinkerpop.blueprints.impls.rdbms.PropertyStore.vertexPropertyStore;
 import static com.tinkerpop.blueprints.impls.rdbms.PropertyStore.edgePropertyStore;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -142,10 +143,7 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
     // =================================
     @Override
     public Vertex addVertex(Object id) {
-//        1. add to SoR
-//        2. add to cache
-        RdbmsVertex vertex = dao.getVertexDao().add();
-        return cache(vertex);
+        return cache(dao.getVertexDao().add());
     }
     // =================================
     @Override
@@ -164,11 +162,11 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
     @Override
     public void removeVertex(Vertex vertex) {
         checkNotNull(vertex);
-        // TODO: remove properties
         for (Edge e : vertex.getEdges(Direction.BOTH))
             removeEdge(e);
         Long longId = (Long) vertex.getId();
         vertexCache.invalidate(longId);
+        vps.remove(longId);
         dao.getVertexDao().remove(longId);
     }
     // =================================
@@ -181,13 +179,14 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
     @Override
     public Iterable<Vertex> getVertices(String key, Object value) {
         // TODO: this is likely to be a smaller list, so cache the return values
-        return new CovariantIterable<Vertex>(dao.getVertexDao().list(key, value));
+        Iterable<RdbmsVertex> vertices = dao.getVertexDao().list(key, value);
+        for (RdbmsVertex v: vertices)
+            vertexCache.put(v.rawId(), v);
+        return new CovariantIterable<Vertex>(vertices);
     }
     // =================================
     @Override
     public Edge addEdge(Object id, Vertex outVertex, Vertex inVertex, String label) {
-//        1. add to SoR
-//        2. add to cache
         RdbmsVertex oV = (RdbmsVertex)outVertex;
         RdbmsVertex iV = (RdbmsVertex)inVertex;
         RdbmsEdge edge = dao.getEdgeDao().add(oV.rawId(), iV.rawId(), label);
@@ -198,7 +197,6 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
     // =================================
     @Override
     public Edge getEdge(Object id) {
-//      Look up in cache, which cascades to SoR
         checkNotNull(id);
         try {
             final Long longID = (Long) id;
@@ -218,8 +216,10 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
     // =================================
     @Override
     public Iterable<Edge> getEdges(String key, Object value) {
-        // TODO: check on the validity of this...?
-        return new CovariantIterable<Edge>(dao.getEdgeDao().list(key, value));
+        Iterable<RdbmsEdge> edges = dao.getEdgeDao().list(key, value);
+        for (RdbmsEdge e: edges)
+            edgeCache.put(e.rawId(), e);
+        return new CovariantIterable<Edge>(edges);
     }
     // =================================
     Iterable<RdbmsEdge> getEdges(Long vertexID) {
@@ -228,6 +228,7 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
         return cache(edges);
     }
     // =================================
+    // TODO: the edge removes its own properties from the SoR, then we do it again here...
     @Override
     public void removeEdge(Edge edge) {
         checkNotNull(edge);
@@ -235,8 +236,7 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
         Long longId = e.rawId();
         e.getOutVertex().removeEdge(longId);
         e.getInVertex().removeEdge(longId);
-        // TODO: remove properties
-
+        eps.remove(longId);
         dao.getEdgeDao().remove(longId);
         edgeCache.invalidate(longId);
     }

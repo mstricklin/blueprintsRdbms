@@ -98,11 +98,15 @@ public class PropertyStore {
     <T> T removeProperty(Long id, String key) {
         Map<String, Object> p = getProperties(id);
         if (p.containsKey(key)) {
-            dao.removeProperty(id, key);
+            dao.remove(id, key);
             log.info("removing {}|{} from cache", id, key);
             return (T) p.remove(key);
         }
         return null;
+    }
+    // =================================
+    void remove(Long id) {
+        propertyCache.invalidate(id);
     }
     // =================================
     void clear() {
@@ -118,14 +122,11 @@ public class PropertyStore {
     };
     RemovalListener<Long, Map<String, Object>> removalListener = new RemovalListener<Long, Map<String, Object>>() {
         public void onRemoval(RemovalNotification<Long, Map<String, Object>> notification) {
-            log.info("removalListener of {} => {}", notification.getKey(), notification.getValue());
             if (notification.getCause() == RemovalCause.EXPLICIT) {
-                log.info("explicit removalListener of {} => {}", notification.getKey(), notification.getValue());
-                // cascade to the SoR
+                dao.remove(notification.getKey());
             }
         }
     };
-
     // =================================
     @Data
     public static final class PropertyDTO {

@@ -3,18 +3,15 @@ package com.tinkerpop.blueprints.impls.rdbms.dao.hsqldb;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.List;
 
 import javax.sql.DataSource;
 
 import com.tinkerpop.blueprints.impls.rdbms.RdbmsElement;
-import com.tinkerpop.blueprints.impls.rdbms.dao.DaoFactory;
 import com.tinkerpop.blueprints.impls.rdbms.dao.Serializer;
 import org.sql2o.Connection;
 import org.sql2o.ResultSetHandler;
 import org.sql2o.Sql2o;
 
-import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.impls.rdbms.RdbmsGraph;
 import com.tinkerpop.blueprints.impls.rdbms.RdbmsVertex;
 import com.tinkerpop.blueprints.impls.rdbms.dao.DaoFactory.VertexDao;
@@ -37,27 +34,23 @@ public class HsqldbVertexDao implements VertexDao {
         }
     };
     // =================================
+    private static final String ADD_QUERY = "insert into vertex values (null)";
     @Override
     public RdbmsVertex add() {
-        String sql = "insert into vertex values (null)";
-
         try (Connection con = sql2o.open()) {
-            Long genID = con.createQuery(sql, "add vertex", true)
+            Long genID = con.createQuery(ADD_QUERY, "add vertex", true)
                                .executeUpdate()
                                .getKey(Long.class);
             log.info("generated vertex id returned {}", genID);
-            return new RdbmsVertex(genID.longValue(), graph);
+            return new RdbmsVertex(genID, graph);
         }
     }
     // =================================
+    private static final String GET_QUERY = "select id from vertex where id = :id";
     @Override
     public RdbmsVertex get(long id) {
-        // TODO: this needs to be heavily optimized...any time one does a 'getProperty' on each
-        // vertex in turn, it adds another round-trip to the DB
-        String sql = "select * from vertex where id = :id";
-
         try (Connection con = sql2o.open()) {
-            RdbmsVertex v = con.createQuery(sql, "get vertex "+id)
+            RdbmsVertex v = con.createQuery(GET_QUERY, "get vertex "+id)
                                .addParameter("id", id)
                                .executeAndFetchFirst(makeVertex);
             log.info("returned vertex for {}: {}", id, v);
@@ -65,39 +58,37 @@ public class HsqldbVertexDao implements VertexDao {
         }
     }
     // =================================
+    // TODO: make this an inner join?
+    private static final String DELETE_QUERY = "delete from vertex where id = :id";
+    private static final String DELETE_PROPERTY_QUERY = "delete from property where element_id = :id and type = :type";
     @Override
     public void remove(long id) {
-
-        String sql0 = "delete from vertex where id = :id";
-        String sql1 = "delete from property where element_id = :id";
-
         try (Connection con = sql2o.open()) {
             log.info("remove vertex w id {}", id);
-            con.createQuery(sql0, "remove vertex "+id)
-                          .addParameter("id", id).executeUpdate();
-            con.createQuery(sql1, "remove properties for "+id)
-                          .addParameter("id", id).executeUpdate();
+            con.createQuery(DELETE_QUERY, "remove vertex "+id)
+                    .addParameter("id", id)
+                    .executeUpdate();
+            con.createQuery(DELETE_PROPERTY_QUERY, "remove properties for "+id)
+                    .addParameter("id", id)
+                    .addParameter("type", RdbmsElement.PropertyType.VERTEX)
+                    .executeUpdate();
         }
     }
     // =================================
+    private static final String LIST_QUERY = "select id from vertex";
     @Override
     public Iterable<RdbmsVertex> list() {
-        // TODO: this can be heavily optimized...any time one does a 'getProperty' on each
-        // vertex in turn, it adds another round-trip to the DB
-        String sql = "select id from vertex";
-
         try (Connection con = sql2o.open()) {
-            return con.createQuery(sql, "get all vertices").executeAndFetch(makeVertex);
+            return con.createQuery(LIST_QUERY, "get all vertices").executeAndFetch(makeVertex);
         }
     }
     // =================================
+    private static final String FILTER_QUERY = "select distinct element_id from property where key = :key and value = :value";
     @Override
     public Iterable<RdbmsVertex> list(String key, Object value) {
-        String sql = "select distinct element_id from property where key = :key and value = :value";
-
         String serializedValue = serializer.serialize(value);
         try (Connection con = sql2o.open()) {
-            return con.createQuery(sql, "filtered vertices")
+            return con.createQuery(FILTER_QUERY, "filtered vertices")
                     .addParameter("key", key)
                     .addParameter("value", serializedValue)
                     .addColumnMapping("element_id", "id")
@@ -105,11 +96,11 @@ public class HsqldbVertexDao implements VertexDao {
         }
     }
     // =================================
-    private final static String sqlClear = "truncate table vertex restart identity and commit no check";
+    private final static String CLEAR_QUERY = "truncate table vertex restart identity and commit no check";
     @Override
     public void clear() {
         try (Connection con = sql2o.open()) {
-            con.createQuery(sqlClear, "clear vertices").executeUpdate();
+            con.createQuery(CLEAR_QUERY, "clear vertices").executeUpdate();
         }
     }
     // =================================
