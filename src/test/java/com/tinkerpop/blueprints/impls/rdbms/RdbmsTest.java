@@ -68,7 +68,6 @@ public class RdbmsTest {
         Assert.assertNull(graph_.getEdge(e.getId()));
         Assert.assertNotNull(graph_.getVertex(vB.getId()));
     }
-
     // =================================
     @Test
     public void testSelfRemoveVertex() throws Exception {
@@ -267,7 +266,7 @@ public class RdbmsTest {
 
     // X add vertex
     // X get vertex
-    // get vertices by key-value
+    // X get vertices by key-value
     // X remove vertex (do edges get removed too?)
     // X self-remove vertex
     // X list vertex edges by label
@@ -277,7 +276,7 @@ public class RdbmsTest {
     // X add edge
     // X add edge by vertex
     // X get edge
-    // get edge by key-value
+    // X get edge by key-value
     // X remove edge
     // X iterate vertices
     // X iterate edges
@@ -481,8 +480,11 @@ public class RdbmsTest {
     }
     // =================================
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         graph_ = generateGraph();
+
+        log.info("graph name: {}", graph_.toString());
+        log.info("graph class name: {}", graph_.getClass().getSimpleName().toLowerCase());
 
         @SuppressWarnings("unchecked")
         MetaGraph<RdbmsGraph> mg = (MetaGraph<RdbmsGraph>) graph_;

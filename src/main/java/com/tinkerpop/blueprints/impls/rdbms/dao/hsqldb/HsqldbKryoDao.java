@@ -42,7 +42,6 @@ public class HsqldbKryoDao implements SerializerDao {
         sql2o = new Sql2o(dataSource);
         // TODO: should be thread-local. How handle registrations...?
         kryo = new Kryo();
-        loadRegistrations();
     }
     // =================================
     // Oh, we're so overdue for lambdas...
@@ -56,6 +55,7 @@ public class HsqldbKryoDao implements SerializerDao {
     // =================================
     @Override
     public Map<String, Integer> loadRegistrations() {
+        log.info("load registrations");
         String sql = "select classname, id from serial_mapping";
         try (Connection con = sql2o.open()) {
             List<Map.Entry<String, Integer>> entries = con.createQuery(sql, "all serialization mappings")
@@ -67,6 +67,7 @@ public class HsqldbKryoDao implements SerializerDao {
     // needs to be an upsert...
     @Override
     public void addRegistration(String clazzname, Integer id) {
+        log.info("+++++++++++++++++++++++++++++++++++++++++++++++++");
         log.info("registration not found for class {}", clazzname);
         //Integer id = Integer.valueOf(kryo.register(o.getClass()).getId());
         log.info("mapping to id {}", id);

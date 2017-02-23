@@ -2,6 +2,7 @@ package com.tinkerpop.blueprints.impls.rdbms;
 
 import com.google.common.cache.*;
 import com.google.common.cache.CacheLoader.InvalidCacheLoadException;
+import com.google.common.collect.ImmutableSet;
 import com.tinkerpop.blueprints.impls.rdbms.dao.DaoFactory;
 import com.tinkerpop.blueprints.util.ExceptionFactory;
 import com.tinkerpop.blueprints.util.StringFactory;
@@ -48,7 +49,8 @@ public class PropertyStore {
     }
     // =================================
     Set<String> getPropertyKeys(Long id) {
-        return Collections.unmodifiableSet( getProperties(id).keySet() );
+//        return Collections.unmodifiableSet( getProperties(id).keySet() );
+        return ImmutableSet.copyOf( getProperties(id).keySet() );
     }
     // =================================
     // gonna be a lot of auto-boxing through this call...

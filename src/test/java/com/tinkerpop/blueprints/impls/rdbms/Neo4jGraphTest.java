@@ -4,34 +4,71 @@ package com.tinkerpop.blueprints.impls.rdbms;
 import java.io.File;
 import java.lang.reflect.Method;
 
-import com.tinkerpop.blueprints.Graph;
-import com.tinkerpop.blueprints.TestSuite;
-import com.tinkerpop.blueprints.Vertex;
-import com.tinkerpop.blueprints.VertexTestSuite;
+import com.tinkerpop.blueprints.*;
 import com.tinkerpop.blueprints.impls.GraphTest;
 import com.tinkerpop.blueprints.impls.neo4j.Neo4jGraph;
-import com.tinkerpop.blueprints.impls.tg.TinkerGraph;
+//import com.tinkerpop.blueprints.pgm.AutomaticIndexTestSuite;
+
 
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class Neo4jGraphTest extends GraphTest {
 
+//    public void testNeo4jBenchmarkTestSuite() throws Exception {
+//        this.stopWatch();
+//        doTestSuite(new Neo4jBenchmarkTestSuite(this));
+//        printTestPerformance("Neo4jBenchmarkTestSuite", this.stopWatch());
+//    }
+
     public void testVertexTestSuite() throws Exception {
         this.stopWatch();
-//        doTestSuite(new VertexTestSuite(this));
-//        VertexTestSuite vts = new VertexTestSuite(this);
-//        vts.testVertexEquality();
-
-//        Graph graph = generateGraph();
-//        Vertex v = graph.addVertex(null);
-//        Vertex u = graph.getVertex(v.getId());
-//        assertNotNull(u);
-//        log.info("retrieved vertex: {}", u);
-//        //u.setProperty(null, -1);
-//        printTestPerformance("VertexTestSuite", this.stopWatch());
-        assertTrue(true);
+        doTestSuite(new VertexTestSuite(this));
+        printTestPerformance("VertexTestSuite", this.stopWatch());
     }
+
+    public void testEdgeTestSuite() throws Exception {
+        this.stopWatch();
+        doTestSuite(new EdgeTestSuite(this));
+        printTestPerformance("EdgeTestSuite", this.stopWatch());
+    }
+
+    public void testGraphTestSuite() throws Exception {
+        this.stopWatch();
+        doTestSuite(new GraphTestSuite(this));
+        printTestPerformance("GraphTestSuite", this.stopWatch());
+    }
+
+    public void testIndexableGraphTestSuite() throws Exception {
+        this.stopWatch();
+        doTestSuite(new IndexableGraphTestSuite(this));
+        printTestPerformance("IndexableGraphTestSuite", this.stopWatch());
+    }
+
+    public void testIndexTestSuite() throws Exception {
+        this.stopWatch();
+        doTestSuite(new IndexTestSuite(this));
+        printTestPerformance("IndexTestSuite", this.stopWatch());
+    }
+
+//    public void testAutomaticIndexTestSuite() throws Exception {
+//        this.stopWatch();
+//        doTestSuite(new AutomaticIndexTestSuite(this));
+//        printTestPerformance("AutomaticIndexTestSuite", this.stopWatch());
+//    }
+
+    public void testTransactionalGraphTestSuite() throws Exception {
+        this.stopWatch();
+//        doTestSuite(new TransactionalGraphTestSuite(this));
+        printTestPerformance("TransactionalGraphTestSuite", this.stopWatch());
+    }
+
+//    public void testGraphMLReaderTestSuite() throws Exception {
+//        this.stopWatch();
+//        doTestSuite(new GraphMLReaderTestSuite(this));
+//        printTestPerformance("GraphMLReaderTestSuite", this.stopWatch());
+//    }
+
     // =================================
     @Override
     public Graph generateGraph() {

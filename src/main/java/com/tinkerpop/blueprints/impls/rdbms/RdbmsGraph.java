@@ -14,6 +14,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.Map.Entry;
 
 import com.tinkerpop.blueprints.*;
+import com.tinkerpop.blueprints.util.ExceptionFactory;
+import com.tinkerpop.blueprints.util.StringFactory;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationConverter;
 
@@ -148,10 +150,14 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
     // =================================
     @Override
     public Vertex getVertex(final Object id) {
-        //      Look up in cache, which cascades to SoR
-        checkNotNull(id);
+        if (null == id)
+            throw ExceptionFactory.vertexIdCanNotBeNull();
         try {
-            final Long longID = (Long) id;
+            final Long longID;
+            if (id instanceof Long)
+                longID = (Long) id;
+            else
+                longID = Long.valueOf(id.toString());
             return vertexCache.get(longID);
         } catch (ExecutionException | InvalidCacheLoadException | ClassCastException e) {
             log.error("could not find vertex w id {}", id);
@@ -197,7 +203,8 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
     // =================================
     @Override
     public Edge getEdge(Object id) {
-        checkNotNull(id);
+        if (null == id)
+            throw ExceptionFactory.edgeIdCanNotBeNull();
         try {
             final Long longID = (Long) id;
             return edgeCache.get(longID);
@@ -325,6 +332,9 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
         vertexCache.invalidateAll();
         vps.clear();
         eps.clear();
+    }
+    public String toString() {
+        return StringFactory.graphString(this,  "vertices:" + vertexCache.size() + " edges:" + edgeCache.size());
     }
     // =================================
     public PropertyStore vertexPropertyCache() {
