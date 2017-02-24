@@ -9,6 +9,8 @@ import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.Date;
 
+import static com.google.common.collect.Lists.newArrayList;
+
 @Slf4j
 public class RdbmsGraphTest extends GraphTest {
     private static final String GRAPH_PROPERTIES = "graph.properties";
@@ -36,13 +38,17 @@ public class RdbmsGraphTest extends GraphTest {
         final Vertex vertexA = graph.addVertex(null);
         final Vertex vertexB = graph.addVertex(null);
         final Edge edge = graph.addEdge(null, vertexA, vertexB, "knows");
-        vertexA.setProperty("keyDate", new Date());
+        vertexA.setProperty("keyDate0", new Date());
+        vertexA.setProperty("keyDate1", new Date());
+        vertexA.setProperty("keyDate2", new Date());
+        vertexA.setProperty("list", newArrayList());
 //        trySetProperty(vertexA, "keyDate", new Date(), graph.getFeatures().supportsSerializableObjectProperty);
 //        trySetProperty(edge, "keyDate", new Date(), graph.getFeatures().supportsSerializableObjectProperty);
 
 //        this.stopWatch();
 //        doTestSuite(new GraphTestSuite(this));
 //        printTestPerformance("GraphTestSuite", this.stopWatch());
+        graph.shutdown();
     }
 
     // =================================

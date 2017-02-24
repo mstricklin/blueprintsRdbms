@@ -74,7 +74,7 @@ public class HsqldbKryoDao implements SerializerDao {
         classMap.put(clazzname, id);
         String sql = "insert into serial_mapping values (:classname, :id)";
         try (Connection con = sql2o.open()) {
-            con.createQuery(sql, "add serialization mapping "+clazzname)
+            con.createQuery(sql, "add serialization mapping "+clazzname+id)
                                 .addParameter("classname", clazzname)
                                 .addParameter("id", id)
                                 .executeUpdate();

@@ -43,8 +43,8 @@ public class KryoSerializer implements Serializer {
             try {
                 Class<?> clazz = this.getClass().getClassLoader().loadClass(e.getKey());
                 Registration r = kryo.register(clazz, e.getValue());
-                log.info("KryoSerializer saved registration {} => {}", e.getKey(), e.getValue());
-                log.info("KryoSerializer saved registration {}", r);
+                log.info("KryoSerializer loaded registration {} => {}", e.getKey(), e.getValue());
+                log.info("KryoSerializer loaded registration {}", r);
                 classRegistrations.put(r, r.getId());
 
             } catch (ClassNotFoundException e1) {
@@ -66,7 +66,7 @@ public class KryoSerializer implements Serializer {
     @Override
     public <T> String serialize(T o) {
         // getRegistration registers if not already
-        Registration r = kryo.getRegistration(o.getClass());
+        Registration r = kryo.register(o.getClass());
         log.info("pulled from kryo {} {}", r, r.getId());
         //c.get(r);
         if ( ! classRegistrations.containsKey(r)) {
