@@ -30,10 +30,10 @@ public class HsqldbDaoFactory implements DaoFactory {
         cpm = new ConnectionPoolManager(hikariConfig_);
         graph = graph_;
 
-        log.info("HsqldbDaoFactory CPM: {}", cpm);
+        log.trace("HsqldbDaoFactory CPM: {}", cpm);
 
         new SchemaVersionManager(cpm.getDataSource()).migrate();
-        log.info("Done migrate");
+        log.trace("Done migrate");
 
         ds = cpm.getDataSource();
         SerializerDao sd = new HsqldbKryoDao(ds);
@@ -51,7 +51,7 @@ public class HsqldbDaoFactory implements DaoFactory {
     public void close() {
         try {
             if (null != cpm) {
-                log.info("Shutting down connection...");
+                log.debug("Shutting down connection...");
                 cpm.close();
             }
         } catch (SQLException e) {

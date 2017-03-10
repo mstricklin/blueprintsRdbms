@@ -41,7 +41,7 @@ public class HsqldbVertexDao implements VertexDao {
             Long genID = con.createQuery(ADD_QUERY, "add vertex", true)
                                .executeUpdate()
                                .getKey(Long.class);
-            log.info("generated vertex id returned {}", genID);
+            log.debug("generated vertex id returned {}", genID);
             return new RdbmsVertex(genID, graph);
         }
     }
@@ -53,7 +53,7 @@ public class HsqldbVertexDao implements VertexDao {
             RdbmsVertex v = con.createQuery(GET_QUERY, "get vertex "+id)
                                .addParameter("id", id)
                                .executeAndFetchFirst(makeVertex);
-            log.info("returned vertex for {}: {}", id, v);
+            log.debug("returned vertex for {}: {}", id, v);
             return v;
         }
     }
@@ -64,7 +64,7 @@ public class HsqldbVertexDao implements VertexDao {
     @Override
     public void remove(long id) {
         try (Connection con = sql2o.open()) {
-            log.info("remove vertex w id {}", id);
+            log.debug("remove vertex w id {}", id);
             con.createQuery(DELETE_QUERY, "remove vertex "+id)
                     .addParameter("id", id)
                     .executeUpdate();

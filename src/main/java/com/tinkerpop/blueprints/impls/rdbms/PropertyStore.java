@@ -18,6 +18,7 @@ import static com.google.common.collect.Maps.newHashMap;
 @Slf4j
 @RequiredArgsConstructor(staticName = "of")
 public class PropertyStore {
+    // TODO: test, are we actually pulling from this cache?
 
     // =================================
     static PropertyStore vertexPropertyStore(DaoFactory.PropertyDao dao_) {
@@ -55,8 +56,6 @@ public class PropertyStore {
     // =================================
     // gonna be a lot of auto-boxing through this call...
     void setProperty(Long id, String key, Object value) {
-        // TODO: can key be null?
-        // TODO: can value be null?
         validateProperty(key, value);
 
         Map<String, Object> p = getProperties(id);
@@ -66,7 +65,7 @@ public class PropertyStore {
         if (null != v)
             log.info("prop class {}", p.get(key).getClass().getName());
         if (Objects.equals(v, value)) {
-            log.info("property already exists, returning {}=>{}", key, value);
+            log.debug("property already exists, returning {}=>{}", key, value);
             return;
         }
         dao.setProperty(id, key, value);
@@ -130,7 +129,7 @@ public class PropertyStore {
         }
     };
     // =================================
-    @Data
+    @Data(staticConstructor="of")
     public static final class PropertyDTO {
         public final String key;
         public final Object value;

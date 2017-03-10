@@ -5,8 +5,11 @@ import java.util.List;
 
 import javax.sql.DataSource;
 
+import com.google.common.base.Function;
+import com.google.common.collect.Lists;
 import com.tinkerpop.blueprints.impls.rdbms.PropertyStore;
 import com.tinkerpop.blueprints.impls.rdbms.RdbmsElement;
+import lombok.Data;
 import org.sql2o.Connection;
 import org.sql2o.Sql2o;
 
@@ -14,6 +17,8 @@ import com.tinkerpop.blueprints.impls.rdbms.dao.DaoFactory.PropertyDao;
 import com.tinkerpop.blueprints.impls.rdbms.dao.Serializer;
 
 import lombok.extern.slf4j.Slf4j;
+
+import static com.google.common.collect.Lists.transform;
 
 @Slf4j
 public class HsqldbPropertyDao implements PropertyDao {
@@ -41,7 +46,7 @@ public class HsqldbPropertyDao implements PropertyDao {
                     .addParameter("key", key)
                     .addParameter("value", serializedValue)
                     .executeUpdate();
-            log.info("set property {}={} for element id {}", key, value, id);
+            log.debug("set property {}={} for element id {}", key, value, id);
         }
 	}
 	// =================================
@@ -58,9 +63,8 @@ public class HsqldbPropertyDao implements PropertyDao {
                     .addParameter("type", type)
                     .addParameter("key", key)
                     .executeScalar(String.class);
-            log.info("returned prop for {} {}: {}", id, key, value);
             Object o = serializer.deserialize(value);
-            log.info("deserialized: {}", o);
+            log.debug("returned prop for {} {}: {} ({})", id, key, value, o);
             return (T)o;
         }
 	}
@@ -69,7 +73,7 @@ public class HsqldbPropertyDao implements PropertyDao {
             "where element_id = :id and type = :type";
     @Override
     public void remove(long id) {
-        log.info("clear property {}", id);
+        log.debug("clear property {}", id);
         try (Connection con = sql2o.open()) {
             con.createQuery(CLEAR_QUERY, "clear property")
                     .addParameter("id", id)
@@ -82,7 +86,7 @@ public class HsqldbPropertyDao implements PropertyDao {
             "where element_id = :id and type = :type and key = :key";
     @Override
 	public void remove(long id, String key) {
-	    log.info("remove property {} => {}", id, key);
+	    log.debug("remove property {} => {}", id, key);
         try (Connection con = sql2o.open()) {
             con.createQuery(RM_QUERY, "remove property")
                     .addParameter("id", id)
@@ -96,12 +100,25 @@ public class HsqldbPropertyDao implements PropertyDao {
             "where element_id = :id and type = :type";
     @Override
 	public List<PropertyStore.PropertyDTO> properties(long id) {
+        @Data
+        final class Prop {
+            public final String key;
+            public final String value;
+        }
         try (Connection con = sql2o.open()) {
-            log.info("get all properties for {}", id);
-            return con.createQuery(GET_ALL_QUERY, "get all properties "+id)
+            log.debug("get all properties for {}", id);
+            List<Prop> l = con.createQuery(GET_ALL_QUERY, "get all properties "+id)
                     .addParameter("id", id)
                     .addParameter("type", type)
-                    .executeAndFetch(PropertyStore.PropertyDTO.class);
+                    .executeAndFetch(Prop.class);
+
+            return transform(l, new Function<Prop, PropertyStore.PropertyDTO>() {
+
+                @Override
+                public PropertyStore.PropertyDTO apply(Prop p) {
+                    return PropertyStore.PropertyDTO.of(p.key, serializer.deserialize(p.value));
+                }
+            });
         }
 	}
     // =================================

@@ -1,5 +1,5 @@
 // CLASSIFICATION NOTICE: This file is UNCLASSIFIED
-package com.tinkerpop.blueprints.impls.rdbms;
+package com.tinkerpop.blueprints.impls.neo4j;
 
 import java.io.File;
 import java.lang.reflect.Method;
@@ -60,6 +60,7 @@ public class Neo4jGraphTest extends GraphTest {
     public void testTransactionalGraphTestSuite() throws Exception {
         this.stopWatch();
 //        doTestSuite(new TransactionalGraphTestSuite(this));
+        (new GraphTestSuite(this)).testGraphDataPersists();
         printTestPerformance("TransactionalGraphTestSuite", this.stopWatch());
     }
 

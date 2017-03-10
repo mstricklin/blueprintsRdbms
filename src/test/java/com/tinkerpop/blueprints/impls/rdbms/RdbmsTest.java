@@ -4,12 +4,13 @@ package com.tinkerpop.blueprints.impls.rdbms;
 import static com.google.common.collect.Lists.newArrayList;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.*;
+import static org.neo4j.helpers.collection.Iterables.count;
 
+import java.io.File;
 import java.net.URL;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.Set;
 
@@ -190,13 +191,13 @@ public class RdbmsTest {
         assertThat(e, hasItem(e0));
         assertThat(e, hasItem(e1));
         e = newArrayList( vA.getEdges(Direction.IN) );
-        Assert.assertTrue(e.isEmpty());
+        assertTrue(e.isEmpty());
 
         e = newArrayList( vB.getEdges(Direction.IN) );
         assertThat(e, hasItem(e0));
         assertThat(e, hasItem(e1));
         e = newArrayList( vB.getEdges(Direction.OUT) );
-        Assert.assertTrue(e.isEmpty());
+        assertTrue(e.isEmpty());
     }
     // =================================
     @Test
@@ -211,13 +212,13 @@ public class RdbmsTest {
         assertThat(e, hasItem(e0));
         assertThat(e, not( hasItem(e1) ));
         e = newArrayList( vA.getEdges(Direction.IN, "edge0") );
-        Assert.assertTrue(e.isEmpty());
+        assertTrue(e.isEmpty());
 
         e = newArrayList( vB.getEdges(Direction.IN, "edge0") );
         assertThat(e, hasItem(e0));
         assertThat(e, not( hasItem(e1) ));
         e = newArrayList( vB.getEdges(Direction.OUT, "edge0") );
-        Assert.assertTrue(e.isEmpty());
+        assertTrue(e.isEmpty());
     }
     // =================================
     @Test
@@ -297,11 +298,11 @@ public class RdbmsTest {
         v.setProperty("Boolean", true);
         Set<String> keys = v.getPropertyKeys();
         assertThat(keys, hasItem("String"));
-        Assert.assertEquals("aaa", v.getProperty("String"));
+        assertEquals("aaa", v.getProperty("String"));
         assertThat(keys, hasItem("Long"));
-        Assert.assertEquals(17L, v.getProperty("Long"));
+        assertEquals(17L, v.getProperty("Long"));
         assertThat(keys, hasItem("Boolean"));
-        Assert.assertEquals(Boolean.TRUE, v.getProperty("Boolean"));
+        assertEquals(Boolean.TRUE, v.getProperty("Boolean"));
 
         // remove property
         v.removeProperty("Boolean");
@@ -312,12 +313,37 @@ public class RdbmsTest {
         // overwrite property
         keys = v.getPropertyKeys();
         assertThat(keys, hasItem("String"));
-        Assert.assertEquals("aaa", v.getProperty("String"));
+        assertEquals("aaa", v.getProperty("String"));
         v.setProperty("String", "bbb");
-        Assert.assertEquals("bbb", v.getProperty("String"));
+        assertEquals("bbb", v.getProperty("String"));
 
         graph_.removeVertex(v);
+
+//        trySetProperty(vertexA, "keyDate", new Date()
+        v.setProperty("keyDate", new Date());
+        trySetProperty(v, "keyDate", new Date(), graph_.getFeatures().supportsSerializableObjectProperty);
+
+
     }
+    private void trySetProperty(final Element element, final String key, final Object value, final boolean allowDataType) {
+        boolean exceptionTossed = false;
+        try {
+            element.setProperty(key, value);
+        } catch (Throwable t) {
+            exceptionTossed = true;
+            if (!allowDataType) {
+                assertTrue(t instanceof IllegalArgumentException);
+            } else {
+                fail("setProperty should not have thrown an exception as this data type is accepted according to the GraphTest settings.\n\n" +
+                        "Exception was " + t);
+            }
+        }
+
+        if (!allowDataType && !exceptionTossed) {
+            fail("setProperty threw an exception but the data type should have been accepted.");
+        }
+    }
+
 
     // =================================
     @Test
@@ -463,7 +489,30 @@ public class RdbmsTest {
             last = v;
             log.info("added vertex {} {}", i, v);
         }
-        Assert.assertTrue(true);
+        assertTrue(true);
+    }
+    // =================================
+    public void testClear() {
+        RdbmsGraph graph = (RdbmsGraph) this.generateGraph();
+//        this.stopWatch();
+        for (int i = 0; i < 25; i++) {
+            Vertex a = graph.addVertex(null);
+            Vertex b = graph.addVertex(null);
+            graph.addEdge(null, a, b, "knows");
+        }
+//        printPerformance(graph.toString(), 75, "elements added", this.stopWatch());
+
+        assertEquals(50, count(graph.getVertices()));
+        assertEquals(25, count(graph.getEdges()));
+
+//        this.stopWatch();
+        graph.clear();
+//        printPerformance(graph.toString(), 75, "elements deleted", this.stopWatch());
+
+        assertEquals(0, count(graph.getVertices()));
+        assertEquals(0, count(graph.getEdges()));
+
+        graph.shutdown();
     }
 
 

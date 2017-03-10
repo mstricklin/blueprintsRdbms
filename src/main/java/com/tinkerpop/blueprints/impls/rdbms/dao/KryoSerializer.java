@@ -41,7 +41,9 @@ public class KryoSerializer implements Serializer {
         // TODO: what if kryo doesn't agree with our requested registration id?
         for (Map.Entry<String, Integer> e: serializerDao.loadRegistrations().entrySet()) {
             try {
-                Class<?> clazz = this.getClass().getClassLoader().loadClass(e.getKey());
+                log.info("loading into cache registration {} => {}", e.getKey(), e.getValue());
+//                Class<?> clazz = this.getClass().getClassLoader().loadClass(e.getKey());
+                Class<?> clazz = Class.forName(e.getKey());
                 Registration r = kryo.register(clazz, e.getValue());
                 log.info("KryoSerializer loaded registration {} => {}", e.getKey(), e.getValue());
                 log.info("KryoSerializer loaded registration {}", r);
@@ -57,7 +59,7 @@ public class KryoSerializer implements Serializer {
     CacheLoader<Registration, Integer> cl = new CacheLoader<Registration, Integer>() {
         @Override
         public Integer load(Registration r) throws Exception {
-            log.info("first time seen serialization for {}", r.getType().getName());
+            log.debug("first time seen serialization for {}", r.getType().getName());
             serializerDao.addRegistration(r.getType().getName(), r.getId());
             return r.getId();
         }
@@ -67,10 +69,10 @@ public class KryoSerializer implements Serializer {
     public <T> String serialize(T o) {
         // getRegistration registers if not already
         Registration r = kryo.register(o.getClass());
-        log.info("pulled from kryo {} {}", r, r.getId());
+        log.trace("registration pulled from kryo {}", r);
         //c.get(r);
         if ( ! classRegistrations.containsKey(r)) {
-            log.info("first time seen serialization for {}", r.getType().getName());
+            log.debug("first time seen serialization for {}", r.getType().getName());
             classRegistrations.put(r, r.getId());
             serializerDao.addRegistration(r.getType().getName(), r.getId());
         }

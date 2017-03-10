@@ -38,16 +38,16 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
 
     static {
         // TODO: revisit this...
-        FEATURES.supportsSerializableObjectProperty = true;
+        FEATURES.supportsSerializableObjectProperty = false;
         FEATURES.supportsBooleanProperty = true;
         FEATURES.supportsDoubleProperty = true;
         FEATURES.supportsFloatProperty = true;
         FEATURES.supportsIntegerProperty = true;
         FEATURES.supportsPrimitiveArrayProperty = true;
         FEATURES.supportsUniformListProperty = true;
-        FEATURES.supportsMixedListProperty = true;
+        FEATURES.supportsMixedListProperty = false;
         FEATURES.supportsLongProperty = true;
-        FEATURES.supportsMapProperty = true;
+        FEATURES.supportsMapProperty = false;
         FEATURES.supportsStringProperty = true;
 
         FEATURES.supportsDuplicateEdges = true;
@@ -159,7 +159,9 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
             else
                 longID = Long.valueOf(id.toString());
             return vertexCache.get(longID);
-        } catch (ExecutionException | InvalidCacheLoadException | ClassCastException e) {
+        } catch (NumberFormatException | ClassCastException e) {
+            log.error("could not use vertex id {}", id);
+        } catch (ExecutionException | InvalidCacheLoadException e) {
             log.error("could not find vertex w id {}", id);
         }
         return null;
@@ -246,6 +248,8 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
         eps.remove(longId);
         dao.getEdgeDao().remove(longId);
         edgeCache.invalidate(longId);
+
+        // TODO: indices?
     }
     // =================================
     @Override

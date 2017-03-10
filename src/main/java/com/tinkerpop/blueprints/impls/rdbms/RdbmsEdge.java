@@ -39,6 +39,13 @@ public class RdbmsEdge extends RdbmsElement implements Edge {
         return (RdbmsVertex)graph.getVertex(inVertexId);
     }
     // =================================
+    long getOutVertexId() {
+        return outVertexId;
+    }
+    long getInVertexId() {
+        return inVertexId;
+    }
+    // =================================
     @Override
     public String getLabel() {
         return label;

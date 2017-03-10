@@ -51,7 +51,7 @@ public class HsqldbEdgeDao implements EdgeDao {
                                .addParameter("label", label)
                                .executeUpdate()
                                .getKey(Long.class);
-            log.info("generated edge id returned {}", genID);
+            log.debug("generated edge id returned {}", genID);
             return new RdbmsEdge(genID, outVertexID, inVertexID, label, graph);
         }
     }
@@ -65,7 +65,7 @@ public class HsqldbEdgeDao implements EdgeDao {
             RdbmsEdge e = con.createQuery(GET_QUERY, "get edge "+id)
                                .addParameter("id", id)
                                .executeAndFetchFirst(makeEdge);
-            log.info("returned edge for {}: {}", id, e);
+            log.debug("returned edge for {}: {}", id, e);
             return e;
         }
     }
@@ -77,7 +77,7 @@ public class HsqldbEdgeDao implements EdgeDao {
     @Override
     public void remove(long id) {
         try (org.sql2o.Connection con = sql2o.open()) {
-            log.info("remove edge w id {}", id);
+            log.debug("remove edge w id {}", id);
             con.createQuery(DELETE_QUERY, "remove edge "+id)
                     .addParameter("id", id)
                     .executeUpdate();
@@ -93,7 +93,7 @@ public class HsqldbEdgeDao implements EdgeDao {
     @Override
     public Iterable<RdbmsEdge> list() {
         try (org.sql2o.Connection con = sql2o.open()) {
-            log.info("request all edges");
+            log.debug("request all edges");
             return con.createQuery(LIST_QUERY, "get all edges")
                       .executeAndFetch(makeEdge);
         }

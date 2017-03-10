@@ -16,7 +16,6 @@ import java.util.AbstractMap.SimpleImmutableEntry;
 
 import javax.sql.DataSource;
 
-import org.codehaus.groovy.runtime.metaclass.NewInstanceMetaMethod;
 import org.sql2o.Connection;
 import org.sql2o.ResultSetHandler;
 import org.sql2o.Sql2o;
@@ -53,28 +52,28 @@ public class HsqldbKryoDao implements SerializerDao {
         }
     };
     // =================================
+    private static final String LOAD_QUERY = "select classname, id from serial_mapping";
     @Override
     public Map<String, Integer> loadRegistrations() {
-        log.info("load registrations");
-        String sql = "select classname, id from serial_mapping";
+        log.debug("load registrations");
+
         try (Connection con = sql2o.open()) {
-            List<Map.Entry<String, Integer>> entries = con.createQuery(sql, "all serialization mappings")
+            List<Map.Entry<String, Integer>> entries = con.createQuery(LOAD_QUERY, "all serialization mappings")
                                                           .executeAndFetch(makeMakeEntry);
             return ImmutableMap.copyOf( entries );
         }
     }
     // =================================
     // needs to be an upsert...
+    private static final String ADD_QUERY = "insert into serial_mapping values (:classname, :id)";
     @Override
     public void addRegistration(String clazzname, Integer id) {
-        log.info("+++++++++++++++++++++++++++++++++++++++++++++++++");
-        log.info("registration not found for class {}", clazzname);
         //Integer id = Integer.valueOf(kryo.register(o.getClass()).getId());
-        log.info("mapping to id {}", id);
+        log.debug("mapping to id {}", id);
         classMap.put(clazzname, id);
-        String sql = "insert into serial_mapping values (:classname, :id)";
+
         try (Connection con = sql2o.open()) {
-            con.createQuery(sql, "add serialization mapping "+clazzname+id)
+            con.createQuery(ADD_QUERY, "add serialization mapping "+clazzname+id)
                                 .addParameter("classname", clazzname)
                                 .addParameter("id", id)
                                 .executeUpdate();

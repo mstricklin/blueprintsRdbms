@@ -30,11 +30,11 @@ public class RdbmsVertex extends RdbmsElement implements Vertex {
     public RdbmsVertex(final long vertexID, final RdbmsGraph graph) {
         super(graph.vertexPropertyCache(), vertexID, graph);
         log.info("RdbmsVertex ctor");
-
+    // TODO: pull ids, instead of edges?
         for (RdbmsEdge e: graph.getEdges(vertexID)) {
-            if (vertexID == e.getOutVertex().rawId())
+            if (vertexID == e.getOutVertexId())
                 qOutEdges.add(e.rawId());
-            if (vertexID == e.getInVertex().rawId())
+            if (vertexID == e.getInVertexId())
                 qInEdges.add(e.rawId());
         }
     }

@@ -8,7 +8,6 @@ import org.junit.Test;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.impls.mem.MemGraph;
-import com.tinkerpop.blueprints.impls.rdbms.Neo4jGraphTest;
 import com.tinkerpop.frames.FramedGraph;
 import com.tinkerpop.frames.FramedGraphFactory;
 
