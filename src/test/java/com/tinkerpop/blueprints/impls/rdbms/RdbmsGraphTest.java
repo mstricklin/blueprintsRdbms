@@ -3,16 +3,12 @@ package com.tinkerpop.blueprints.impls.rdbms;
 
 import com.tinkerpop.blueprints.*;
 import com.tinkerpop.blueprints.impls.GraphTest;
-import com.tinkerpop.blueprints.impls.rdbms.RdbmsGraph;
 import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Method;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.UUID;
 
-import static com.google.common.collect.Lists.newArrayList;
 
 @Slf4j
 public class RdbmsGraphTest extends GraphTest {
@@ -30,12 +26,13 @@ public class RdbmsGraphTest extends GraphTest {
         doTestSuite(new VertexTestSuite(this));
         printTestPerformance("VertexTestSuite", this.stopWatch());
     }
+    // =================================
     public void testEdgeTestSuite() throws Exception {
         this.stopWatch();
         doTestSuite(new EdgeTestSuite(this));
         printTestPerformance("EdgeTestSuite", this.stopWatch());
     }
-
+    // =================================
     public void testGraphTestSuite() throws Exception {
         this.stopWatch();
         doTestSuite(new GraphTestSuite(this));

@@ -17,10 +17,12 @@ import com.tinkerpop.blueprints.VertexTestSuite;
 import com.tinkerpop.blueprints.impls.GraphTest;
 import com.tinkerpop.blueprints.util.ElementHelper;
 import com.tinkerpop.blueprints.util.io.gml.GMLReaderTestSuite;
+import com.tinkerpop.blueprints.util.io.graphml.GraphMLReader;
 import com.tinkerpop.blueprints.util.io.graphml.GraphMLReaderTestSuite;
 import com.tinkerpop.blueprints.util.io.graphson.GraphSONReaderTestSuite;
 
 import java.io.File;
+import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.util.Iterator;
 import java.util.UUID;
@@ -30,11 +32,15 @@ import java.util.UUID;
  */
 public class TinkerGraphTest extends GraphTest {
 
-    /*public void testTinkerBenchmarkTestSuite() throws Exception {
-        this.stopWatch();
-        doTestSuite(new TinkerBenchmarkTestSuite(this));
-        printTestPerformance("TinkerBenchmarkTestSuite", this.stopWatch());
-    }*/
+    public void testTinkerBenchmarkTestSuite() throws Exception {
+
+        Graph g = generateGraph();
+        InputStream is = GraphMLReader.class.getResourceAsStream("graph-example-2.xml");
+        GraphMLReader.inputGraph(generateGraph(), is);
+//        this.stopWatch();
+//        doTestSuite(new TinkerBenchmarkTestSuite(this));
+//        printTestPerformance("TinkerBenchmarkTestSuite", this.stopWatch());
+    }
 
     public void testGraphTestSuite() throws Exception {
         this.stopWatch();
