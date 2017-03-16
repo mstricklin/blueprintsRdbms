@@ -102,6 +102,9 @@ public class RdbmsGraph implements TransactionalGraph, IndexableGraph, KeyIndexa
         // TODO: parameterize sizes of vertex & edge caches...?
         vps = vertexPropertyStore(dao.getPropertyDao(RdbmsElement.PropertyType.VERTEX));
         eps = edgePropertyStore(dao.getPropertyDao(RdbmsElement.PropertyType.EDGE));
+
+        int vertexMax = dao.getVertexDao().maxID();
+        int edgeMax   = dao.getEdgeDao().maxID();
     }
     // =================================
     private void dumpProperties(RdbmsElement e) {

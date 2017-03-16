@@ -14,7 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public abstract class RdbmsElement implements Element {
+public abstract class RdbmsElement implements Element, IdAble {
     public enum PropertyType {
         VERTEX("V"),
         EDGE("E");
@@ -45,7 +45,8 @@ public abstract class RdbmsElement implements Element {
     public Object getId() {
         return this.id;
     }
-    protected long rawId() {
+    @Override
+    public long rawId() {
         return this.id;
     }
     // =================================

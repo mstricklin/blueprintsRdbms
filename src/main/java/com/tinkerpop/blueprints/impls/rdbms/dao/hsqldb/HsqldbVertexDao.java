@@ -34,6 +34,16 @@ public class HsqldbVertexDao implements VertexDao {
         }
     };
     // =================================
+    private static final String MAX_ID_QUERY = "select max(id) from vertex";
+    public int maxID() {
+        try (Connection con = sql2o.open()) {
+            int maxID = con.createQuery(MAX_ID_QUERY, "vertex max(id)")
+                               .executeScalar(Integer.class);
+            log.debug("returned max vertex id {}", maxID);
+            return maxID;
+        }
+    }
+    // =================================
     private static final String ADD_QUERY = "insert into vertex values (null)";
     @Override
     public RdbmsVertex add() {
@@ -80,6 +90,16 @@ public class HsqldbVertexDao implements VertexDao {
     public Iterable<RdbmsVertex> list() {
         try (Connection con = sql2o.open()) {
             return con.createQuery(LIST_QUERY, "get all vertices").executeAndFetch(makeVertex);
+        }
+    }
+    // =================================
+    private static final String LIST_LIMIT_QUERY = "select id from vertex limit :limit";
+    @Override
+    public Iterable<RdbmsVertex> list(int limit) {
+        try (Connection con = sql2o.open()) {
+            return con.createQuery(LIST_LIMIT_QUERY, "get limited vertices")
+                    .addParameter("limit", limit)
+                    .executeAndFetch(makeVertex);
         }
     }
     // =================================

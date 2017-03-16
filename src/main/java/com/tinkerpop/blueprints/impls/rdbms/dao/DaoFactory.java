@@ -21,20 +21,34 @@ public interface DaoFactory {
         void clear();
     }
     // =================================
-    interface VertexDao {
+    interface ElementDao {
+        int maxID();
         RdbmsVertex add();
         RdbmsVertex get(long id);
         void remove(long id);
         Iterable<RdbmsVertex> list();
+        Iterable<RdbmsVertex> list(int limit);
         Iterable<RdbmsVertex> list(String key, Object value);
         void clear();
     }
+    interface VertexDao extends ElementDao {
+//        int maxID();
+//        RdbmsVertex add();
+//        RdbmsVertex get(long id);
+//        void remove(long id);
+//        Iterable<RdbmsVertex> list();
+//        Iterable<RdbmsVertex> list(int limit);
+//        Iterable<RdbmsVertex> list(String key, Object value);
+//        void clear();
+    }
     // =================================
     interface EdgeDao {
+        int maxID();
         RdbmsEdge add(long outVertexID, long inVertexID, final String label);
         RdbmsEdge get(long id);
         void remove(long id);
         Iterable<RdbmsEdge> list();
+        Iterable<RdbmsEdge> list(int limit);
         Iterable<RdbmsEdge> list(String key, Object value);
         Iterable<RdbmsEdge> list(Long vertexId);
         void clear();

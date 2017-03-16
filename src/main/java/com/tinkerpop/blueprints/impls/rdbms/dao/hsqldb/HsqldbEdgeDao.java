@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import javax.sql.DataSource;
 
 import com.tinkerpop.blueprints.impls.rdbms.RdbmsElement;
+import com.tinkerpop.blueprints.impls.rdbms.RdbmsVertex;
 import com.tinkerpop.blueprints.impls.rdbms.dao.Serializer;
 import org.sql2o.Connection;
 import org.sql2o.ResultSetHandler;
@@ -37,6 +38,16 @@ public class HsqldbEdgeDao implements EdgeDao {
                     graph);
         }
     };
+    // =================================
+    private static final String MAX_ID_QUERY = "select max(id) from vertex";
+    public int maxID() {
+        try (Connection con = sql2o.open()) {
+            int maxID = con.createQuery(MAX_ID_QUERY, "vertex max(id)")
+                    .executeScalar(Integer.class);
+            log.debug("returned max vertex id {}", maxID);
+            return maxID;
+        }
+    }
     // =================================
     private static final String ADD_QUERY =
             "insert into edge (out_vertex_id, in_vertex_id, label) " +
@@ -96,6 +107,16 @@ public class HsqldbEdgeDao implements EdgeDao {
             log.debug("request all edges");
             return con.createQuery(LIST_QUERY, "get all edges")
                       .executeAndFetch(makeEdge);
+        }
+    }
+    // =================================
+    private static final String LIST_LIMIT_QUERY = "select id from edge limit :limit";
+    @Override
+    public Iterable<RdbmsEdge> list(int limit) {
+        try (Connection con = sql2o.open()) {
+            return con.createQuery(LIST_LIMIT_QUERY, "get limited edges")
+                    .addParameter("limit", limit)
+                    .executeAndFetch(makeEdge);
         }
     }
     // =================================

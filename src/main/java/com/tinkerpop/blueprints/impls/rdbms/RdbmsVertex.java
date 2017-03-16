@@ -106,6 +106,7 @@ public class RdbmsVertex extends RdbmsElement implements Vertex {
         qOutEdges.remove(edgeId);
         qInEdges.remove(edgeId);
     }
+
     // =================================
     @Override
     public String toString() {
@@ -116,5 +117,6 @@ public class RdbmsVertex extends RdbmsElement implements Vertex {
     private static final Set<Long> typedSet() { return newHashSet(); };
     private Set<Long> qOutEdges = Collections.synchronizedSet(typedSet());
     private Set<Long> qInEdges  = Collections.synchronizedSet(typedSet());
+
 
 }
